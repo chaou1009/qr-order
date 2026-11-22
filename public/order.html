@@ -133,6 +133,22 @@
   .st.new { background: #fff4d6; color: #8a5a00; }
   .st.done { background: #e6f4ea; color: #1e7a3c; }
   .table-sum { margin: 12px 16px; padding: 14px; border-radius: 14px; background: var(--ink); color: var(--surface); display: flex; justify-content: space-between; font-weight: 800; font-size: 17px; }
+  .busy { margin-top: 12px; display: flex; gap: 10px; align-items: flex-start; background: #fff4d6; color: #7a4f00; border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 1.45; font-weight: 600; }
+  .busy svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+  .busy.lv2 { background: #fde2e1; color: #9a2a1d; }
+  .reason { display: flex; align-items: center; width: calc(100% - 32px); margin: 0 16px 10px; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 15px 16px; font-size: 16px; font-weight: 700; text-align: left; }
+  .reason:active { background: var(--chip); }
+  .sheet-sub { padding: 0 16px 10px; color: var(--muted); font-size: 14px; margin: 0; }
+  .rm-line { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .rm-line input { position: absolute; opacity: 0; pointer-events: none; }
+  .rm-line .info { flex: 1; min-width: 0; }
+  .rm-line .sub { font-size: 13px; color: var(--muted); }
+  .rm-line.wait { cursor: default; opacity: .6; }
+  .rm-line.wait .mark { border-style: dashed; }
+  .rm-line input:checked + .mark { border-color: var(--accent); background: var(--accent); }
+  .rm-line input:checked + .mark::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
+  .remind-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 32px); margin: 4px 16px 12px; border: 1px dashed var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; padding: 12px; border-radius: 14px; }
+  .remind-cta svg { width: 18px; height: 18px; }
   /* cart */
   .cart-line { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); align-items: flex-start; }
   .cart-line .info { flex: 1; min-width: 0; }
@@ -205,6 +221,7 @@
 <div class="sheet" id="itemSheet" role="dialog" aria-modal="true"></div>
 <div class="sheet" id="cartSheet" role="dialog" aria-modal="true"></div>
 <div class="sheet" id="histSheet" role="dialog" aria-modal="true"></div>
+<div class="sheet" id="svcSheet" role="dialog" aria-modal="true"></div>
 <div class="success" id="success"></div>
 <div class="lang-menu" id="langMenu"></div>
 <div class="toast" id="toast"></div>
@@ -213,39 +230,63 @@
 'use strict';
 // ---------------- i18n ----------------
 const T = {
-  en: { table: 'Table', orders: 'My orders', viewCart: 'View cart', cart: 'Your order', add: 'Add to order', soldOut: 'Sold out',
-    required: 'Required', optional: 'Optional', pickOne: 'Pick 1', pickAny: 'Pick any', note: 'Special requests', notePh: 'e.g. no spring onion, less oil',
-    placeOrder: 'Place order', total: 'Total', placing: 'Sending…', emptyCart: 'Your cart is empty', clear: 'Clear all',
-    payHint: 'Payment at the counter after your meal', sent: 'Order sent!', sentSub: 'The kitchen has received your order.',
-    enjoy: 'Enjoy your meal! Please pay at the counter.', orderNo: 'Order', orderMore: 'Order more', viewOrders: 'View my orders',
-    noOrders: 'No orders yet from this phone.', histNote: 'Orders placed from this phone today', chooseRequired: 'Please choose',
-    badTable: 'This QR code is not valid', badTableSub: 'Please scan the QR code on your table again, or ask our staff for help.',
-    netErr: 'Network problem, please try again.', soldOutErr: 'Sorry, {x} just sold out. Please remove it from your order.',
-    unavailErr: 'Some items are no longer available. Please check your order.', tooMany: 'Too many orders. Please ask our staff.',
-    added: 'Added to order', items: 'items', addNote: 'Note', language: 'Language', edit: 'Edit',
-    noticeTxt: 'Order here · pay at the counter', confirmClear: 'Clear all items?', dineIn: 'Dine in', takeaway: 'Take away', howServe: 'Dine in or take away?', cancelled: 'Cancelled', tabMine: 'My orders', tabTable: 'Whole table', stNew: 'Sent', stDone: 'Confirmed', tableTotal: 'Table total', tableNote: 'All orders at this table since you sat down', fromOther: 'Other phone', closedT: 'Thank you for dining with us!', closedS: 'This table has been cleared. To order again, please scan the QR code on your table.' },
-  ms: { table: 'Meja', orders: 'Pesanan saya', viewCart: 'Lihat troli', cart: 'Pesanan anda', add: 'Tambah', soldOut: 'Habis dijual',
+  en: { table: 'Table', orders: 'Orders', viewCart: 'View cart', cart: 'Your order', add: 'Add to order', soldOut: 'Sold out',
+    required: 'Required', optional: 'Optional', pickOne: 'Choose 1', pickAny: 'Choose any', note: 'Special requests', notePh: 'e.g. no spring onion, less oil',
+    placeOrder: 'Place order', total: 'Total', placing: 'Sending your order…', emptyCart: 'Your cart is empty. Have a look at our menu!', clear: 'Remove all',
+    payHint: 'Kindly pay at the counter after your meal. Thank you!', sent: 'Thank you for your order!', sentSub: 'Our kitchen has received it and will start preparing shortly.',
+    enjoy: 'Enjoy your meal! Kindly pay at the counter when you are done.', orderNo: 'Order', orderMore: 'Order more', viewOrders: 'View my orders',
+    noOrders: 'You have not placed any orders yet.', chooseRequired: 'Please select',
+    badTable: 'Sorry, we could not recognise this QR code', badTableSub: 'Please scan the QR code on your table again, or ask our staff for help. Thank you!',
+    netErr: 'Sorry, the connection seems unstable. Please try again.', soldOutErr: 'Sorry, {x} has just sold out. Please remove it from your order.',
+    unavailErr: 'Sorry, some items are no longer available. Please review your order.', tooMany: 'Sorry, we could not send this right now. Please ask our staff for help.',
+    addNote: 'Note', language: 'Language', edit: 'Update order',
+    noticeTxt: 'Order from your phone · pay at the counter', confirmClear: 'Remove all items from your cart?', dineIn: 'Dine in', takeaway: 'Take away', howServe: 'Dine in or take away?',
+    cancelled: 'Cancelled', tabMine: 'My orders', tabTable: 'Whole table', stNew: 'Received', stDone: 'Confirmed', tableTotal: 'Table total',
+    tableNote: 'Everything ordered at your table during this visit', closedT: 'Thank you for dining with us!', closedS: 'We hope to see you again soon. If you would like to order more, please scan the QR code on your table.',
+    callStaff: 'Call staff', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
+    callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Still waiting for a dish?', remindTitle: 'Which dishes have not arrived yet?',
+    remindSub: 'Please tick the dishes you are still waiting for, and we will let the kitchen know right away.', remindBtn: 'Let the kitchen know',
+    remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
+    busy1: 'We are a little busy right now, so food may take about {m} minutes longer. Thank you for your patience!', busy2: 'We are very busy right now, so food may take about {m} minutes longer. Thank you for your patience and understanding!',
+    pickDish: 'Please tick at least one dish.' },
+  ms: { table: 'Meja', orders: 'Pesanan', viewCart: 'Lihat troli', cart: 'Pesanan anda', add: 'Tambah ke pesanan', soldOut: 'Habis dijual',
     required: 'Wajib', optional: 'Pilihan', pickOne: 'Pilih 1', pickAny: 'Pilih mana-mana', note: 'Permintaan khas', notePh: 'cth. tanpa daun bawang, kurang minyak',
-    placeOrder: 'Hantar pesanan', total: 'Jumlah', placing: 'Menghantar…', emptyCart: 'Troli anda kosong', clear: 'Kosongkan',
-    payHint: 'Bayar di kaunter selepas makan', sent: 'Pesanan dihantar!', sentSub: 'Dapur telah menerima pesanan anda.',
-    enjoy: 'Selamat menjamu selera! Sila bayar di kaunter.', orderNo: 'Pesanan', orderMore: 'Pesan lagi', viewOrders: 'Lihat pesanan saya',
-    noOrders: 'Tiada pesanan dari telefon ini lagi.', histNote: 'Pesanan dari telefon ini hari ini', chooseRequired: 'Sila pilih',
-    badTable: 'Kod QR ini tidak sah', badTableSub: 'Sila imbas semula kod QR di meja anda, atau minta bantuan kakitangan kami.',
-    netErr: 'Masalah rangkaian, sila cuba lagi.', soldOutErr: 'Maaf, {x} baru sahaja habis. Sila buang dari pesanan.',
-    unavailErr: 'Sesetengah item tidak lagi tersedia. Sila semak pesanan anda.', tooMany: 'Terlalu banyak pesanan. Sila minta bantuan kakitangan.',
-    added: 'Ditambah', items: 'item', addNote: 'Nota', language: 'Bahasa', edit: 'Ubah',
-    noticeTxt: 'Pesan di sini · bayar di kaunter', confirmClear: 'Kosongkan semua item?', dineIn: 'Makan sini', takeaway: 'Bungkus', howServe: 'Makan sini atau bungkus?', cancelled: 'Dibatalkan', tabMine: 'Pesanan saya', tabTable: 'Seluruh meja', stNew: 'Dihantar', stDone: 'Disahkan', tableTotal: 'Jumlah meja', tableNote: 'Semua pesanan meja ini sejak anda duduk', fromOther: 'Telefon lain', closedT: 'Terima kasih kerana makan bersama kami!', closedS: 'Meja ini telah dikosongkan. Untuk memesan lagi, sila imbas kod QR di meja anda.' },
-  zh: { table: '桌号', orders: '我的订单', viewCart: '查看购物车', cart: '已选菜品', add: '加入订单', soldOut: '已售罄',
-    required: '必选', optional: '可选', pickOne: '单选', pickAny: '可多选', note: '备注', notePh: '例如：去葱、少油',
-    placeOrder: '确认下单', total: '合计', placing: '提交中…', emptyCart: '购物车是空的', clear: '清空',
-    payHint: '用餐后请到柜台付款', sent: '下单成功！', sentSub: '厨房已收到您的订单。',
-    enjoy: '祝您用餐愉快！请到柜台付款。', orderNo: '订单', orderMore: '继续点餐', viewOrders: '查看我的订单',
-    noOrders: '这台手机还没有下过订单。', histNote: '这台手机今天的订单', chooseRequired: '请选择',
-    badTable: '二维码无效', badTableSub: '请重新扫描桌上的二维码，或联系店员。',
-    netErr: '网络异常，请重试。', soldOutErr: '抱歉，{x} 刚刚售罄，请从订单中移除。',
-    unavailErr: '部分菜品已下架，请检查订单。', tooMany: '下单过于频繁，请联系店员。',
-    added: '已加入', items: '件', addNote: '备注', language: '语言', edit: '修改',
-    noticeTxt: '扫码点餐 · 柜台付款', confirmClear: '确定清空购物车？', dineIn: '堂食', takeaway: '外带', howServe: '堂食还是外带？', cancelled: '已取消', tabMine: '我的订单', tabTable: '本桌订单', stNew: '已送出', stDone: '已确认', tableTotal: '本桌合计', tableNote: '本桌这次用餐的所有订单', fromOther: '其他手机', closedT: '谢谢光临！', closedS: '本桌已清台。如需再点餐，请重新扫描桌上的二维码。' },
+    placeOrder: 'Hantar pesanan', total: 'Jumlah', placing: 'Sedang menghantar pesanan…', emptyCart: 'Troli anda masih kosong. Silakan lihat menu kami!', clear: 'Buang semua',
+    payHint: 'Sila bayar di kaunter selepas makan. Terima kasih!', sent: 'Terima kasih atas pesanan anda!', sentSub: 'Dapur kami telah menerimanya dan akan mula menyediakan sebentar lagi.',
+    enjoy: 'Selamat menjamu selera! Sila bayar di kaunter selepas selesai makan.', orderNo: 'Pesanan', orderMore: 'Pesan lagi', viewOrders: 'Lihat pesanan saya',
+    noOrders: 'Anda belum membuat sebarang pesanan.', chooseRequired: 'Sila pilih',
+    badTable: 'Maaf, kod QR ini tidak dapat dikenal pasti', badTableSub: 'Sila imbas semula kod QR di meja anda, atau minta bantuan kakitangan kami. Terima kasih!',
+    netErr: 'Maaf, sambungan kurang stabil. Sila cuba lagi.', soldOutErr: 'Maaf, {x} baru sahaja habis dijual. Sila buang dari pesanan anda.',
+    unavailErr: 'Maaf, sesetengah item tidak lagi tersedia. Sila semak semula pesanan anda.', tooMany: 'Maaf, permintaan tidak dapat dihantar sekarang. Sila minta bantuan kakitangan kami.',
+    addNote: 'Nota', language: 'Bahasa', edit: 'Kemas kini',
+    noticeTxt: 'Pesan melalui telefon · bayar di kaunter', confirmClear: 'Buang semua item dari troli?', dineIn: 'Makan sini', takeaway: 'Bungkus', howServe: 'Makan sini atau bungkus?',
+    cancelled: 'Dibatalkan', tabMine: 'Pesanan saya', tabTable: 'Seluruh meja', stNew: 'Diterima', stDone: 'Disahkan', tableTotal: 'Jumlah meja',
+    tableNote: 'Semua pesanan meja anda sepanjang kunjungan ini', closedT: 'Terima kasih kerana menjamu selera bersama kami!', closedS: 'Kami harap dapat berjumpa lagi. Jika ingin memesan lagi, sila imbas kod QR di meja anda.',
+    callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
+    callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Masih menunggu hidangan?', remindTitle: 'Hidangan mana yang belum sampai?',
+    remindSub: 'Sila tandakan hidangan yang masih ditunggu, dan kami akan memaklumkan dapur dengan segera.', remindBtn: 'Maklumkan dapur',
+    remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
+    busy1: 'Kami agak sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran anda!', busy2: 'Kami sangat sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran dan pengertian anda!',
+    pickDish: 'Sila tandakan sekurang-kurangnya satu hidangan.' },
+  zh: { table: '桌号', orders: '订单', viewCart: '查看购物车', cart: '您的订单', add: '加入订单', soldOut: '已售完',
+    required: '必选', optional: '可选', pickOne: '请选 1 项', pickAny: '可多选', note: '特别要求', notePh: '例如：去葱、少油',
+    placeOrder: '确认下单', total: '合计', placing: '正在为您送出订单…', emptyCart: '购物车还是空的，看看喜欢的菜吧！', clear: '全部移除',
+    payHint: '用餐后请到柜台付款，谢谢！', sent: '感谢您的点餐！', sentSub: '厨房已收到您的订单，马上为您准备。',
+    enjoy: '祝您用餐愉快！用餐后请到柜台付款。', orderNo: '订单', orderMore: '继续点餐', viewOrders: '查看我的订单',
+    noOrders: '您目前还没有订单。', chooseRequired: '请选择',
+    badTable: '抱歉，无法识别这个二维码', badTableSub: '请重新扫描桌上的二维码，或请店员协助，谢谢！',
+    netErr: '抱歉，网络不太稳定，请稍后再试。', soldOutErr: '抱歉，{x} 刚刚售完了，请从订单中移除。',
+    unavailErr: '抱歉，部分菜品暂时无法供应，请您再确认一下订单。', tooMany: '抱歉，暂时无法送出，请联系店员协助。',
+    addNote: '备注', language: '语言', edit: '更新订单',
+    noticeTxt: '手机点餐 · 柜台付款', confirmClear: '确定要移除购物车里的全部菜品吗？', dineIn: '堂食', takeaway: '外带', howServe: '请问堂食还是外带？',
+    cancelled: '已取消', tabMine: '我的订单', tabTable: '本桌订单', stNew: '已收到', stDone: '已确认', tableTotal: '本桌合计',
+    tableNote: '本桌这次用餐的所有订单', closedT: '谢谢光临，欢迎再来！', closedS: '期待再次为您服务。如需再点餐，请重新扫描桌上的二维码。',
+    callStaff: '呼叫服务员', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
+    callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '还有菜没上吗？', remindTitle: '请问哪些菜还没上桌？',
+    remindSub: '请勾选还在等待的菜品，我们会马上通知厨房。', remindBtn: '通知厨房',
+    remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
+    busy1: '目前用餐人数较多，出餐可能需要多等约 {m} 分钟，感谢您的耐心等候！', busy2: '目前非常繁忙，出餐可能需要多等约 {m} 分钟，感谢您的耐心与谅解！',
+    pickDish: '请至少勾选一道菜。' },
 };
 const LANGS = [['en', 'English'], ['ms', 'Bahasa Melayu'], ['zh', '中文']];
 const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -264,6 +305,10 @@ const ICON = {
   receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></svg>',
   globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>',
   counter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  bowl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 7c0-1.5 1-2 1-3.5M12 7c0-1.5 1-2 1-3.5M16 7c0-1.5 1-2 1-3.5"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
 };
 
@@ -274,7 +319,7 @@ let clientId = store.get('clientId', null);
 if (!clientId) { clientId = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)); store.set('clientId', clientId); }
 let cartKey = 'cart:' + (seat ? seat.key : '');
 let cart = seat ? store.get(cartKey, []) : []; // [{key, itemId, qty, options:{gid:[cid]}, note}]
-let menu = [], itemsById = new Map(), table = null, config = { name: '' }, seatClosed = false;
+let menu = [], itemsById = new Map(), table = null, config = { name: '' }, seatClosed = false, busy = { level: 0, extra: 0 }, skew = 0;
 let detail = null; // {item, qty, options, note, editKey}
 
 async function api(path, opts) {
@@ -297,16 +342,19 @@ function renderPage() {
         <div class="brand"><div class="logo">${esc(initial)}</div>
           <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>
         <div class="hero-actions">
+          <button class="icon-btn" id="callBtn" aria-label="${esc(t('callStaff'))}">${ICON.bell}</button>
           <button class="icon-btn" id="histBtn" aria-label="${esc(t('orders'))}">${ICON.receipt}</button>
-          <button class="icon-btn" id="langBtn" aria-label="${esc(t('language'))}">${ICON.globe}<span>${{ en: 'EN', ms: 'BM', zh: '中' }[lang]}</span></button>
+          <button class="icon-btn" id="langBtn" aria-label="${esc(t('language'))}"><span>${{ en: 'EN', ms: 'BM', zh: '中' }[lang]}</span></button>
         </div>
       </div>
       <div class="notice">${ICON.counter.replace('<svg', '<svg width="16" height="16"')}<span>${esc(t('noticeTxt'))}</span></div>
+      <div id="busyBar">${busyHTML()}</div>
     </header>
     <nav class="tabs"><div class="tabs-scroll" id="tabs">${tabs}</div></nav>
     <main>${sections}</main>
     <div class="footer-space">${esc(config.name)}</div>`;
   $('histBtn').onclick = openHistory;
+  $('callBtn').onclick = openCall;
   $('langBtn').onclick = (e) => { e.stopPropagation(); toggleLang(); };
   $('tabs').onclick = (e) => { const b = e.target.closest('.tab'); if (!b) return; const s = $('cat-' + b.dataset.cat);
     scrollLock = Date.now(); setActiveTab(b.dataset.cat); window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 56, behavior: 'smooth' }); };
@@ -391,8 +439,8 @@ function renderItem() {
       <div class="detail-main"><h3>${esc(L(it.name))}</h3>${L(it.description) ? `<p>${esc(L(it.description))}</p>` : ''}<div class="price">${rm(it.price)}</div></div>
       ${groups}
       <div class="serve"><b>${esc(t('howServe'))}</b><div class="seg2" id="serveSeg">
-        <button type="button" data-ta="0" class="${detail.takeaway ? '' : 'on'}">🍽️ ${esc(t('dineIn'))}</button>
-        <button type="button" data-ta="1" class="ta ${detail.takeaway ? 'on' : ''}">🥡 ${esc(t('takeaway'))}</button></div></div>
+        <button type="button" data-ta="0" class="${detail.takeaway ? '' : 'on'}">${ICON.bowl.replace('<svg', '<svg width="18" height="18"')} ${esc(t('dineIn'))}</button>
+        <button type="button" data-ta="1" class="ta ${detail.takeaway ? 'on' : ''}">${ICON.bag.replace('<svg', '<svg width="18" height="18"')} ${esc(t('takeaway'))}</button></div></div>
       <div class="note-wrap"><b>${esc(t('note'))} <span class="badge">${esc(t('optional'))}</span></b>
         <textarea id="noteInput" rows="2" maxlength="120" placeholder="${esc(t('notePh'))}">${esc(detail.note)}</textarea></div>
     </div>
@@ -518,46 +566,111 @@ function showSuccess(res, snapshot) {
   $('seeBtn').onclick = () => { hideSuccess(); openHistory(); };
 }
 
-// ---------------- history ----------------
-let histTab = 'mine';
+// ---------------- history (auto-refreshes while open) ----------------
+let histTab = 'mine', histOrders = [], histTimer = null;
 const fmtTime = (ms) => new Date(ms).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : lang === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' });
 const statusChip = (o) => o.status === 'void' ? `<span class="void-tag">${esc(t('cancelled'))}</span>` : `<span class="st ${o.status === 'done' ? 'done' : 'new'}">${esc(t(o.status === 'done' ? 'stDone' : 'stNew'))}</span>`;
-const lineRow = (l, sum) => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${l.takeaway ? `<span class="ta-tag">${esc(t('takeaway'))}</span>` : ''}${l.options.length ? `<div class="o">${esc(l.options.map((x) => L(x.choice)).join(' · '))}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(sum)}</b></div>`;
+const taTag = (l) => l.takeaway ? `<span class="ta-tag">${esc(t('takeaway'))}</span>` : '';
+const lineRow = (l, sum) => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${taTag(l)}${l.options.length ? `<div class="o">${esc(l.options.map((x) => L(x.choice)).join(' · '))}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(sum)}</b></div>`;
+const emptyHTML = (msg) => `<div class="empty">${ICON.receipt.replace('<svg', '<svg width="40" height="40"')}<p>${esc(msg)}</p></div>`;
+async function fetchSeatOrders() {
+  try { histOrders = (await api('/api/seat-orders?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId))).orders; return true; }
+  catch (e) { if (e.data?.error === 'SEAT_CLOSED') { showClosed(); return false; } return null; }
+}
+function drawHistory() {
+  const sh = $('histSheet'); if (!sh.classList.contains('show')) return;
+  sh.querySelectorAll('[data-h]').forEach((b) => { b.classList.toggle('on', b.dataset.h === histTab); b.onclick = () => { histTab = b.dataset.h; drawHistory(); }; });
+  const body = sh.querySelector('.sheet-body'); const keep = body.scrollTop;
+  const live = histOrders.filter((o) => o.status !== 'void');
+  const cta = live.length ? `<button class="remind-cta" id="remindCta">${ICON.clock}${esc(t('notArrived'))}</button>` : '';
+  if (histTab === 'mine') {
+    const mine = histOrders.filter((o) => o.mine);
+    body.innerHTML = mine.length ? cta + mine.map((o) => `
+      <div class="hist${o.status === 'void' ? ' void' : ''}"><div class="hist-head"><b>${esc(t('orderNo'))} #${o.seq}${statusChip(o)}</b><span>${fmtTime(o.createdAt)}</span></div>
+        ${o.lines.map((l) => lineRow(l, l.unit * l.qty)).join('')}
+        <div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(o.total)}</span></div></div>`).join('') + '<div style="height:16px"></div>'
+      : emptyHTML(t('noOrders'));
+  } else {
+    // Whole table: merge identical dishes from every phone into one simple list + table total.
+    const merged = new Map(); let total = 0;
+    live.forEach((o) => { total += o.total; o.lines.forEach((l) => {
+      const k = JSON.stringify([l.itemId, l.options.map((x) => x.choice.en), l.note, !!l.takeaway]);
+      const m = merged.get(k); if (m) { m.qty += l.qty; m.sum += l.unit * l.qty; } else merged.set(k, { ...l, sum: l.unit * l.qty });
+    }); });
+    body.innerHTML = merged.size ? `<p class="sheet-sub">${esc(t('tableNote'))} · ${esc(t('table'))} ${esc(table.name)}</p>
+      <div class="hist">${[...merged.values()].map((l) => lineRow(l, l.sum)).join('')}</div>
+      <div class="table-sum"><span>${esc(t('tableTotal'))}</span><span>${rm(total)}</span></div>
+      <div class="pay-hint">${ICON.counter}<span>${esc(t('payHint'))}</span></div>${cta}`
+      : emptyHTML(t('noOrders'));
+  }
+  body.scrollTop = keep;
+  if ($('remindCta')) $('remindCta').onclick = openRemind;
+}
 async function openHistory() {
   $('histSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('orders'))}</h3><button class="close" data-close>${ICON.close}</button></div>
     <div class="htabs"><button data-h="mine">${esc(t('tabMine'))}</button><button data-h="table">${esc(t('tabTable'))}</button></div>
     <div class="sheet-body"><div class="skeleton"><div class="sk" style="height:140px"></div></div></div>`;
   $('histSheet').querySelector('[data-close]').onclick = closeSheets;
   showSheet($('histSheet'));
-  let orders = [];
-  try { orders = (await api('/api/seat-orders?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId))).orders; }
-  catch (e) { if (e.data?.error === 'SEAT_CLOSED') { closeSheets(); return showClosed(); } toast(t('netErr')); }
-  const draw = () => {
-    $('histSheet').querySelectorAll('[data-h]').forEach((b) => { b.classList.toggle('on', b.dataset.h === histTab); b.onclick = () => { histTab = b.dataset.h; draw(); }; });
-    const body = $('histSheet').querySelector('.sheet-body');
-    if (histTab === 'mine') {
-      const mine = orders.filter((o) => o.mine);
-      body.innerHTML = mine.length ? mine.map((o) => `
-        <div class="hist${o.status === 'void' ? ' void' : ''}"><div class="hist-head"><b>${esc(t('orderNo'))} #${o.seq}${statusChip(o)}</b><span>${fmtTime(o.createdAt)}</span></div>
-          ${o.lines.map((l) => lineRow(l, l.unit * l.qty)).join('')}
-          <div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(o.total)}</span></div></div>`).join('') + '<div style="height:16px"></div>'
-        : `<div class="empty">${ICON.receipt.replace('<svg', '<svg width="40" height="40"')}<p>${esc(t('noOrders'))}</p></div>`;
-    } else {
-      // Whole table: merge identical dishes from every phone into one simple list + table total.
-      const merged = new Map(); let total = 0;
-      orders.filter((o) => o.status !== 'void').forEach((o) => { total += o.total; o.lines.forEach((l) => {
-        const k = JSON.stringify([l.itemId, l.options.map((x) => x.choice.en), l.note, !!l.takeaway]);
-        const m = merged.get(k); if (m) { m.qty += l.qty; m.sum += l.unit * l.qty; } else merged.set(k, { ...l, sum: l.unit * l.qty });
-      }); });
-      body.innerHTML = merged.size ? `<div style="padding:0 16px;color:var(--muted);font-size:13px">${esc(t('tableNote'))} · ${esc(t('table'))} ${esc(table.name)}</div>
-        <div class="hist">${[...merged.values()].map((l) => lineRow(l, l.sum)).join('')}</div>
-        <div class="table-sum"><span>${esc(t('tableTotal'))}</span><span>${rm(total)}</span></div>
-        <div class="pay-hint">${ICON.counter}<span>${esc(t('payHint'))}</span></div>`
-        : `<div class="empty">${ICON.receipt.replace('<svg', '<svg width="40" height="40"')}<p>${esc(t('noOrders'))}</p></div>`;
-    }
-  };
-  draw();
+  const ok = await fetchSeatOrders(); if (ok === false) return; if (ok === null) toast(t('netErr'));
+  drawHistory();
+  clearInterval(histTimer);
+  histTimer = setInterval(async () => {   // keep "Confirmed" status and the whole-table list up to date
+    if (!$('histSheet').classList.contains('show')) return clearInterval(histTimer);
+    if (await fetchSeatOrders()) drawHistory();
+  }, 5000);
 }
+
+// ---------------- call staff ----------------
+function openCall() {
+  const reasons = [['water', 'rWater'], ['cutlery', 'rCutlery'], ['sauce', 'rSauce'], ['other', 'rOther']];
+  $('svcSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('callTitle'))}</h3><button class="close" data-close>${ICON.close}</button></div>
+    <div class="sheet-body" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">${reasons.map(([k, label]) => `<button class="reason" data-r="${k}">${esc(t(label))}</button>`).join('')}</div>`;
+  const sh = $('svcSheet'); sh.querySelector('[data-close]').onclick = closeSheets;
+  sh.querySelectorAll('[data-r]').forEach((b) => b.onclick = () => sendService({ type: 'call', reason: b.dataset.r }, t('callSent')));
+  showSheet(sh);
+}
+async function sendService(payload, okMsg) {
+  try { await api('/api/service', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seat: seat.key, ...payload }) }); closeSheets(); toast(okMsg); }
+  catch (e) { if (e.data?.error === 'SEAT_CLOSED') return showClosed(); toast(e.status === 429 ? t('tooMany') : t('netErr')); }
+}
+
+// ---------------- "still waiting for a dish?" ----------------
+async function openRemind() {
+  if (await fetchSeatOrders() === false) return;
+  const now = Date.now() + skew;
+  const lines = histOrders.filter((o) => o.status !== 'void').flatMap((o) => o.lines.map((l, i) => {
+    const due = o.createdAt + ((l.cookMinutes || 15) + busy.extra) * 60000;
+    return { o, l, i, overdue: now >= due, mins: Math.max(1, Math.ceil((due - now) / 60000)) };
+  }));
+  const any = lines.some((x) => x.overdue);
+  $('svcSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('remindTitle'))}</h3><button class="close" data-close>${ICON.close}</button></div>
+    <p class="sheet-sub">${esc(any ? t('remindSub') : t('noneOverdue'))}</p>
+    <div class="sheet-body">${lines.map((x) => `<label class="rm-line${x.overdue ? '' : ' wait'}"><input type="checkbox" ${x.overdue ? '' : 'disabled'} data-o="${x.o.id}" data-i="${x.i}"><span class="mark box"></span>
+      <div class="info"><div><b>${x.l.qty} × ${esc(L(x.l.name))}</b>${taTag(x.l)}</div><div class="sub">${esc(t('orderNo'))} #${x.o.seq} · ${fmtTime(x.o.createdAt)}${x.overdue ? '' : ' · ' + esc(t('usually').replace('{m}', x.mins))}</div></div></label>`).join('')}</div>
+    <div class="sheet-foot"><button class="primary center" id="remindSend" ${any ? '' : 'disabled'}>${esc(t('remindBtn'))}</button></div>`;
+  const sh = $('svcSheet'); sh.querySelector('[data-close]').onclick = closeSheets;
+  $('remindSend').onclick = () => {
+    const items = [...sh.querySelectorAll('input:checked')].map((c) => ({ orderId: Number(c.dataset.o), line: Number(c.dataset.i) }));
+    if (!items.length) return toast(t('pickDish'));
+    sendService({ type: 'remind', items }, t('remindSent'));
+  };
+  showSheet(sh);
+}
+
+// ---------------- kitchen busy notice ----------------
+function busyHTML() {
+  if (!busy.level) return '';
+  return `<div class="busy lv${busy.level}">${ICON.clock}<span>${esc(t(busy.level === 2 ? 'busy2' : 'busy1').replace('{m}', busy.extra))}</span></div>`;
+}
+async function checkSeat() {
+  if (!seat || seatClosed) return;
+  try { const r = await api('/api/seat?key=' + encodeURIComponent(seat.key)); skew = r.now - Date.now();
+    if (r.busy.level !== busy.level || r.busy.extra !== busy.extra) { busy = r.busy; if ($('busyBar')) $('busyBar').innerHTML = busyHTML(); }
+    return true;
+  } catch (e) { if (e.status === 410) { showClosed(); return false; } }
+}
+setInterval(() => { if (document.visibilityState === 'visible') checkSeat(); }, 20000);
 
 // ---------------- misc ----------------
 let toastTimer;
@@ -586,8 +699,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet
 // When the guest comes back to the tab: check the table is still open, refresh sold-out status.
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !table || seatClosed) return;
-  try { await api('/api/seat?key=' + encodeURIComponent(seat.key)); reloadMenu().catch(() => {}); }
-  catch (e) { if (e.status === 410) showClosed(); }
+  if (await checkSeat()) reloadMenu().catch(() => {});
 });
 
 (async function init() {
@@ -601,8 +713,9 @@ document.addEventListener('visibilitychange', async () => {
       if (!seat || seat.key !== r.seat) { seat = { key: r.seat, table: r.table }; store.set('seat', seat); }
       history.replaceState(null, '', '/o');
     } else if (!seat) return showClosed();
-    else await api('/api/seat?key=' + encodeURIComponent(seat.key));
+
     table = { name: seat.table };
+    const st = await api('/api/seat?key=' + encodeURIComponent(seat.key)); busy = st.busy; skew = st.now - Date.now();
     cartKey = 'cart:' + seat.key; cart = store.get(cartKey, []);
   } catch (e) { if (e.status === 404) return fatal(); if (e.status === 410) return showClosed(); $('app').innerHTML = `<div class="fatal"><h2>${esc(t('netErr'))}</h2><button class="primary center" style="max-width:240px;margin:20px auto" onclick="location.reload()">↻</button></div>`; return; }
   await reloadMenu(); renderPage();

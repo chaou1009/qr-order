@@ -17,7 +17,7 @@ const RESTAURANT_NAME = process.env.RESTAURANT_NAME || 'My Restaurant';
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, ''); // e.g. https://order.myshop.com
 const DEMO = process.env.DEMO === '1';
 // A table's dining session ends when staff taps "clear table", or automatically after this many hours without new orders.
-const AUTO_CLOSE_HOURS = Number(process.env.AUTO_CLOSE_HOURS || 3);
+const AUTO_CLOSE_HOURS = Number(process.env.AUTO_CLOSE_HOURS || 1);
 // This computer's address on the shop Wi-Fi, so phones on the same Wi-Fi can open the QR links.
 function lanUrl() {
   const nets = Object.values(require('node:os').networkInterfaces()).flat()
@@ -69,17 +69,34 @@ if (!db.prepare('PRAGMA table_info(orders)').all().some((c) => c.name === 'sessi
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(session_id)');
 
+if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === 'cook_minutes')) {
+  db.exec('ALTER TABLE items ADD COLUMN cook_minutes INTEGER NOT NULL DEFAULT 15'); // usual time until served
+}
+db.exec(`
+CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS service_requests (
+  id INTEGER PRIMARY KEY, session_id INTEGER NOT NULL, table_id INTEGER NOT NULL, table_name TEXT NOT NULL,
+  type TEXT NOT NULL, detail TEXT NOT NULL, created_at INTEGER NOT NULL, handled_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_requests_open ON service_requests(handled_at);
+`);
+const getSetting = (k, d) => { const r = db.prepare('SELECT value FROM settings WHERE key = ?').get(k); return r ? parseJSON(r.value, d) : d; };
+const setSetting = (k, v) => db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(k, JSON.stringify(v));
+// Kitchen busy level set on the tablet: 0 normal, 1 busy, 2 very busy -> extra minutes added to every dish's usual time.
+const BUSY_EXTRA = { 0: 0, 1: 10, 2: 20 };
+const busyInfo = () => { const level = Number(getSetting('busy_level', 0)) || 0; return { level, extra: BUSY_EXTRA[level] || 0 }; };
+
 const newToken = () => crypto.randomBytes(9).toString('base64url'); // 12 chars, unguessable
 
 // First run: load sample menu + tables so the system can be tried immediately.
 if (db.prepare('SELECT COUNT(*) AS n FROM categories').get().n === 0) {
   const seed = JSON.parse(fs.readFileSync(path.join(__dirname, 'seed.json'), 'utf8'));
   const insCat = db.prepare('INSERT INTO categories (id, name, sort) VALUES (?, ?, ?)');
-  const insItem = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, sort, sold_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  const insItem = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, sort, sold_out, cook_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
   seed.categories.forEach((c, i) => {
     insCat.run(i + 1, JSON.stringify(c.name), i);
     c.items.forEach((it, j) => insItem.run(i + 1, JSON.stringify(it.name), JSON.stringify(it.description || {}),
-      Math.round(it.price * 100), it.image || null, JSON.stringify(it.options || []), j, it.sold_out ? 1 : 0));
+      Math.round(it.price * 100), it.image || null, JSON.stringify(it.options || []), j, it.sold_out ? 1 : 0, it.cook_minutes || 15));
   });
 }
 if (db.prepare('SELECT COUNT(*) AS n FROM tables').get().n === 0) {
@@ -194,7 +211,7 @@ function priceLine(line, itemsById) {
     }
   }
   const note = String(line.note || '').trim().slice(0, 120);
-  return { itemId: it.id, name: parseJSON(it.name, {}), qty, unit, options: picked, note, takeaway: line.takeaway === true };
+  return { itemId: it.id, name: parseJSON(it.name, {}), qty, unit, options: picked, note, takeaway: line.takeaway === true, cookMinutes: it.cook_minutes || 15 };
 }
 
 // ---------- static files ----------
@@ -233,7 +250,34 @@ async function handle(req, res) {
   }
   if (p === '/api/seat' && req.method === 'GET') {
     const seat = seatFromKey(url.searchParams.get('key'));
-    return seat ? send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at }) : send(res, 410, { error: 'SEAT_CLOSED' });
+    return seat ? send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at, busy: busyInfo(), now: Date.now() }) : send(res, 410, { error: 'SEAT_CLOSED' });
+  }
+  // Guest asks for help: "call" (reason) or "remind" (dishes that have not arrived yet).
+  if (p === '/api/service' && req.method === 'POST') {
+    const body = await readBody(req).catch(() => null);
+    const seat = seatFromKey(body?.seat);
+    if (!seat) return send(res, 410, { error: 'SEAT_CLOSED' });
+    const type = body.type === 'remind' ? 'remind' : 'call';
+    if (limited(`s:${seat.sess.id}:${type}`, 3, 2 * 60e3)) return send(res, 429, { error: 'TOO_MANY' });
+    let detail;
+    if (type === 'call') {
+      const reason = String(body.reason || 'other');
+      if (!['water', 'cutlery', 'sauce', 'other'].includes(reason)) return send(res, 400, { error: 'BAD_REASON' });
+      detail = { reason };
+    } else {
+      const want = Array.isArray(body.items) ? body.items.slice(0, 40) : [];
+      const items = [];
+      for (const w of want) {
+        const o = db.prepare("SELECT id, seq, items, created_at FROM orders WHERE id = ? AND session_id = ? AND status != 'void'").get(Number(w.orderId), seat.sess.id);
+        const l = o && parseJSON(o.items, [])[Number(w.line)];
+        if (l) items.push({ orderId: o.id, seq: o.seq, name: l.name, qty: l.qty, takeaway: !!l.takeaway, orderedAt: o.created_at });
+      }
+      if (!items.length) return send(res, 400, { error: 'NO_ITEMS' });
+      detail = { items };
+    }
+    db.prepare('INSERT INTO service_requests (session_id, table_id, table_name, type, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(seat.sess.id, seat.table.id, seat.table.name, type, JSON.stringify(detail), Date.now());
+    return send(res, 201, { ok: true });
   }
   if (p === '/api/config' && req.method === 'GET') return send(res, 200, { name: RESTAURANT_NAME, publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO });
   if (DEMO && req.method === 'GET' && p === '/demo') return serveFile(res, path.join(PUBLIC_DIR, 'demo.html'));
@@ -285,19 +329,32 @@ async function handle(req, res) {
   }
   if (p.startsWith('/api/staff/')) {
     if (!isStaff(req)) return send(res, 401, { error: 'LOGIN' });
+    let m;
     const mapOrder = (o) => ({ id: o.id, seq: o.seq, day: o.day, tableId: o.table_id, table: o.table_name, lines: parseJSON(o.items, []),
       total: o.total, status: o.status, createdAt: o.created_at, doneAt: o.done_at });
 
     if (p === '/api/staff/orders' && req.method === 'GET') {
       const rows = db.prepare("SELECT * FROM orders WHERE status = 'new' ORDER BY id").all();
-      return send(res, 200, { orders: rows.map(mapOrder), now: Date.now() });
+      const requests = db.prepare('SELECT * FROM service_requests WHERE handled_at IS NULL ORDER BY id').all()
+        .map((r) => ({ id: r.id, table: r.table_name, type: r.type, detail: parseJSON(r.detail, {}), createdAt: r.created_at }));
+      return send(res, 200, { orders: rows.map(mapOrder), requests, busy: busyInfo(), now: Date.now() });
+    }
+    if ((m = /^\/api\/staff\/requests\/(\d+)\/done$/.exec(p)) && req.method === 'POST') {
+      db.prepare('UPDATE service_requests SET handled_at = ? WHERE id = ?').run(Date.now(), Number(m[1]));
+      return send(res, 200, { ok: true });
+    }
+    if (p === '/api/staff/busy' && req.method === 'POST') {
+      const body = await readBody(req).catch(() => null);
+      const level = Number(body?.level);
+      if (![0, 1, 2].includes(level)) return send(res, 400, { error: 'BAD_LEVEL' });
+      setSetting('busy_level', level);
+      return send(res, 200, { busy: busyInfo() });
     }
     if (p === '/api/staff/history' && req.method === 'GET') {
       const day = /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('day') || '') ? url.searchParams.get('day') : dayOf(Date.now());
       const rows = db.prepare('SELECT * FROM orders WHERE day = ? ORDER BY id DESC').all(day);
       return send(res, 200, { day, orders: rows.map(mapOrder) });
     }
-    let m;
     if ((m = /^\/api\/staff\/orders\/(\d+)\/(done|undo|void)$/.exec(p)) && req.method === 'POST') {
       const status = { done: 'done', undo: 'new', void: 'void' }[m[2]];
       db.prepare('UPDATE orders SET status = ?, done_at = ? WHERE id = ?').run(status, status === 'new' ? null : Date.now(), Number(m[1]));
