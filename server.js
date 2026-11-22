@@ -608,6 +608,13 @@ async function adminApi(req, res, p, url) {
     db.prepare('SELECT id FROM table_sessions WHERE table_id = ? AND closed_at IS NULL').all(id).forEach((s) => closeSession(s.id, 'regen')); // old QR stops working
     return send(res, 200, { ok: true });
   }
+  // before opening day: remove test orders, calls and table visits; menu, tables and settings stay
+  if (p === '/api/admin/clear-orders' && req.method === 'POST') {
+    if (body?.confirm !== 'CLEAR') return send(res, 400, { error: 'CONFIRM' });
+    const n = db.prepare('SELECT COUNT(*) AS n FROM orders').get().n;
+    db.exec('DELETE FROM orders; DELETE FROM service_requests; DELETE FROM holds; DELETE FROM table_sessions;');
+    return send(res, 200, { cleared: n });
+  }
   // shop name and logo (logo = transparent PNG with the shop name, shown on the guest menu and QR cards)
   if (p === '/api/admin/shop') {
     if (req.method === 'POST') {
