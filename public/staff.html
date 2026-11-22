@@ -122,6 +122,7 @@
   .req-ok { border: 0; background: var(--ink); color: #fff; font-weight: 800; padding: 10px 14px; border-radius: 12px; display: flex; gap: 6px; align-items: center; flex: none; }
   .req-ok svg { width: 18px; height: 18px; }
   .banner.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
+  #soundBar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 60; border: 0; background: #f5b400; color: #1d1b19; font-weight: 800; font-size: 16px; padding: 14px 22px; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100% - 32px); }
 </style>
 </head>
 <body>
@@ -152,7 +153,7 @@ const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ==
 const S = {
   zh: { admin: '管理后台', title: '接单', pending: '待输入', tables: '桌台', history: '历史订单', qr: '二维码', soundOn: '声音：开', soundOff: '声音：关', conn: '连接状态',
     busy0: '出餐：正常', busy1: '出餐：忙碌', busy2: '出餐：非常忙碌', busySet0: '已恢复正常出餐，顾客端的等待提示已关闭。', busySet: '顾客端现在会提示：出餐可能多等约 {m} 分钟。',
-    start: '开始接单', startSub: '请点一下开始。新订单或客人呼叫时平板会响铃，屏幕也会保持常亮。', login: '员工登录', loginSub: '请输入员工密码', tooMany: '尝试次数较多，请稍后再试', badPin: '密码不正确，请再试一次',
+    tapSound: '点一下屏幕任意位置，开启新订单提示音', start: '开始接单', startSub: '请点一下开始。新订单或客人呼叫时平板会响铃，屏幕也会保持常亮。', login: '员工登录', loginSub: '请输入员工密码', tooMany: '尝试次数较多，请稍后再试', badPin: '密码不正确，请再试一次',
     newOrder: '新订单：{t} 号桌', newReq: '{t} 号桌需要服务', tbl: '桌', nOrders: '{n} 张单', justNow: '刚刚', minAgo: '{n} 分钟前', note: '备注', takeaway: '外带',
     taAll: '此单全部外带', taSome: '此单有部分菜品外带', total: '合计', done: '已输入收银机', voidBtn: '作废此单（错误单或重复下单）', voidConfirm: '确定作废这张订单吗？作废后不需要输入收银机。',
     doneToast: '{t} 号桌 #{s} 已完成', voidToast: '{t} 号桌 #{s} 已作废', undo: '撤回', empty: '目前没有待输入的订单', emptySub: '新订单到达时会响铃提醒',
@@ -163,7 +164,7 @@ const S = {
     call: '呼叫服务员', remind: '催菜', rwater: '需要加水', rcutlery: '需要餐具或纸巾', rsauce: '需要酱料或辣椒', rother: '客人请服务员过去', handled: '已处理', orderedAgo: '下单 {n} 分钟', reqTitle: '客人服务提醒' },
   en: { admin: 'Back office', title: 'Orders', pending: 'To enter', tables: 'Tables', history: 'History', qr: 'QR codes', soundOn: 'Sound: on', soundOff: 'Sound: off', conn: 'Connection',
     busy0: 'Kitchen: normal', busy1: 'Kitchen: busy', busy2: 'Kitchen: very busy', busySet0: 'Back to normal. The waiting notice for guests is now off.', busySet: 'Guests will now see: food may take about {m} minutes longer.',
-    start: 'Start taking orders', startSub: 'Please tap to start. The tablet will ring for new orders and guest requests, and the screen will stay on.', login: 'Staff login', loginSub: 'Please enter the staff PIN', tooMany: 'Too many attempts. Please try again shortly.', badPin: 'Incorrect PIN, please try again',
+    tapSound: 'Tap anywhere on the screen to turn on order sounds', start: 'Start taking orders', startSub: 'Please tap to start. The tablet will ring for new orders and guest requests, and the screen will stay on.', login: 'Staff login', loginSub: 'Please enter the staff PIN', tooMany: 'Too many attempts. Please try again shortly.', badPin: 'Incorrect PIN, please try again',
     newOrder: 'New order: table {t}', newReq: 'Table {t} needs assistance', tbl: 'Table', nOrders: '{n} orders', justNow: 'just now', minAgo: '{n} min ago', note: 'Note', takeaway: 'Take away',
     taAll: 'Whole order is take away', taSome: 'Some dishes are take away', total: 'Total', done: 'Entered into POS', voidBtn: 'Void this order (mistake or duplicate)', voidConfirm: 'Void this order? It will not need to be entered into the POS.',
     doneToast: 'Table {t} #{s} done', voidToast: 'Table {t} #{s} voided', undo: 'Undo', empty: 'No orders waiting to be entered', emptySub: 'The tablet will ring when a new order arrives',
@@ -174,7 +175,7 @@ const S = {
     call: 'Call staff', remind: 'Food reminder', rwater: 'Water, please', rcutlery: 'Cutlery or tissues', rsauce: 'Extra sauce or chilli', rother: 'Please come to the table', handled: 'Handled', orderedAgo: 'ordered {n} min ago', reqTitle: 'Guest requests' },
   ms: { admin: 'Pentadbir', title: 'Pesanan', pending: 'Untuk dimasukkan', tables: 'Meja', history: 'Sejarah', qr: 'Kod QR', soundOn: 'Bunyi: hidup', soundOff: 'Bunyi: tutup', conn: 'Sambungan',
     busy0: 'Dapur: biasa', busy1: 'Dapur: sibuk', busy2: 'Dapur: sangat sibuk', busySet0: 'Kembali biasa. Notis menunggu untuk pelanggan telah ditutup.', busySet: 'Pelanggan kini akan melihat: makanan mungkin lambat kira-kira {m} minit.',
-    start: 'Mula terima pesanan', startSub: 'Sila tekan untuk mula. Tablet akan berbunyi untuk pesanan baharu dan permintaan pelanggan, dan skrin akan kekal hidup.', login: 'Log masuk kakitangan', loginSub: 'Sila masukkan PIN kakitangan', tooMany: 'Terlalu banyak cubaan. Sila cuba sebentar lagi.', badPin: 'PIN tidak betul, sila cuba lagi',
+    tapSound: 'Ketik di mana-mana pada skrin untuk menghidupkan bunyi pesanan', start: 'Mula terima pesanan', startSub: 'Sila tekan untuk mula. Tablet akan berbunyi untuk pesanan baharu dan permintaan pelanggan, dan skrin akan kekal hidup.', login: 'Log masuk kakitangan', loginSub: 'Sila masukkan PIN kakitangan', tooMany: 'Terlalu banyak cubaan. Sila cuba sebentar lagi.', badPin: 'PIN tidak betul, sila cuba lagi',
     newOrder: 'Pesanan baharu: meja {t}', newReq: 'Meja {t} memerlukan bantuan', tbl: 'Meja', nOrders: '{n} pesanan', justNow: 'baru tadi', minAgo: '{n} minit lalu', note: 'Nota', takeaway: 'Bungkus',
     taAll: 'Semua dibungkus', taSome: 'Sebahagian hidangan dibungkus', total: 'Jumlah', done: 'Sudah masuk POS', voidBtn: 'Batalkan pesanan ini (silap atau berganda)', voidConfirm: 'Batalkan pesanan ini? Ia tidak perlu dimasukkan ke POS.',
     doneToast: 'Meja {t} #{s} selesai', voidToast: 'Meja {t} #{s} dibatalkan', undo: 'Buat asal', empty: 'Tiada pesanan untuk dimasukkan', emptySub: 'Tablet akan berbunyi apabila pesanan baharu tiba',
@@ -246,13 +247,22 @@ let wakeLock = null;
 async function keepAwake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch {} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); poll(); } });
 
-function showStart() {
-  $('overlay').style.display = 'grid';
-  $('overlay').innerHTML = `<div><h2>${esc(tr('start'))}</h2><p>${esc(tr('startSub'))}</p><button class="big" id="startBtn">${esc(tr('start'))}</button></div>`;
-  $('startBtn').onclick = () => {
-    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch {}
-    $('overlay').style.display = 'none'; keepAwake(); chime(); poll(); if (!pollTimer) pollTimer = setInterval(poll, 4000);
-  };
+// Go straight to the order board. Browsers only allow sound after a tap, so if the page was reopened
+// without one, a small bar asks staff to tap anywhere once; that tap turns on sound and keeps the screen awake.
+function unlockSound() {
+  try { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch {}
+  keepAwake();
+}
+function enterBoard(viaTap) {
+  $('overlay').style.display = 'none'; $('overlay').innerHTML = '';
+  unlockSound(); poll(); if (!pollTimer) pollTimer = setInterval(poll, 4000);
+  setTimeout(() => {
+    if (ctx && ctx.state === 'running') return;
+    const bar = document.createElement('button'); bar.id = 'soundBar'; bar.textContent = tr('tapSound');
+    document.body.appendChild(bar);
+    const go = () => { unlockSound(); bar.remove(); document.removeEventListener('pointerdown', go, true); };
+    document.addEventListener('pointerdown', go, true);
+  }, viaTap ? 400 : 50);
 }
 
 // ---------- login ----------
@@ -273,7 +283,7 @@ function showLogin() {
   };
   const submit = async () => {
     const r = await fetch('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
-    if (r.ok) { pin = ''; showStart(); } else { pin = ''; draw(r.status === 429 ? tr('tooMany') : tr('badPin')); }
+    if (r.ok) { pin = ''; enterBoard(true); } else { pin = ''; draw(r.status === 429 ? tr('tooMany') : tr('badPin')); }
   };
   draw();
 }
@@ -447,7 +457,7 @@ applyLabels();
 (async function init() {
   fetch('/api/config').then((r) => r.json()).then((c) => { restaurantName = c.name; applyLabels(); }).catch(() => {});
   const r = await fetch('/api/staff/orders');
-  if (r.status === 401) showLogin(); else showStart();
+  if (r.status === 401) showLogin(); else enterBoard(false);
 })();
 </script>
 </body>

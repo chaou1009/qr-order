@@ -76,7 +76,7 @@ RESTAURANT_NAME="店名" STAFF_PIN=8888 node server.js
 3. 修改 `docker-compose.yml` 里标了 `CHANGE` 的三处：店名、员工密码、域名。
 4. 域名的 A 记录指向服务器 IP。
 5. 运行 `docker compose up -d`。HTTPS 证书会自动申请。
-6. 平板打开 `https://你的域名/staff`，登录后点"开始接单"（需要点一下才能响铃）。
+6. 平板打开 `https://你的域名/staff`，登录后即可接单（如果提示，点一下屏幕开启提示音）。
 7. 打开 `https://你的域名/staff/qr` 打印二维码。
 
 **数据备份：** 所有数据都在 `data/` 文件夹（`restaurant.db` 和菜品图片 `uploads/`），定期复制这个文件夹即可。
