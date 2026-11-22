@@ -19,6 +19,10 @@
   .hero-actions { display: flex; gap: 8px; flex: none; }
   .icon-btn { height: 38px; min-width: 38px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
   .icon-btn svg { width: 18px; height: 18px; }
+  .call-btn { margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent-ink); font-weight: 800; font-size: 15px; padding: 11px; border-radius: 14px; }
+  .call-btn svg { width: 20px; height: 20px; }
+  .call-btn:active { background: var(--accent-soft); }
+  .call-btn.sent { border-color: #1e9e4a; color: #1e7a3c; background: #e6f4ea; }
   .notice { margin-top: 12px; font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 
   /* ---------- category tabs ---------- */
@@ -147,7 +151,9 @@
   .rm-line.wait .mark { border-style: dashed; }
   .rm-line input:checked + .mark { border-color: var(--accent); background: var(--accent); }
   .rm-line input:checked + .mark::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
-  .remind-cta { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 32px); margin: 4px 16px 12px; border: 1px dashed var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; padding: 12px; border-radius: 14px; }
+  .remind-cta { display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 4px 16px 12px; border: 0; background: var(--accent); color: #fff; font-weight: 800; font-size: 15px; padding: 13px 14px; border-radius: 14px; text-align: left; box-shadow: 0 4px 12px rgba(226,85,43,.25); }
+  .remind-cta span { flex: 1; }
+  .remind-cta .chev { width: 18px; height: 18px; opacity: .9; }
   .remind-cta svg { width: 18px; height: 18px; }
   /* cart */
   .cart-line { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); align-items: flex-start; }
@@ -243,8 +249,8 @@ const T = {
     noticeTxt: 'Order from your phone · pay at the counter', confirmClear: 'Remove all items from your cart?', dineIn: 'Dine in', takeaway: 'Take away', howServe: 'Dine in or take away?',
     cancelled: 'Cancelled', tabMine: 'My orders', tabTable: 'Whole table', stNew: 'Received', stDone: 'Confirmed', tableTotal: 'Table total',
     tableNote: 'Everything ordered at your table during this visit', closedT: 'Thank you for dining with us!', closedS: 'We hope to see you again soon. If you would like to order more, please scan the QR code on your table.',
-    callStaff: 'Call staff', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
-    callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Still waiting for a dish?', remindTitle: 'Which dishes have not arrived yet?',
+    callStaff: 'Call a staff member', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
+    callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Remind staff: a dish has not arrived yet', callDone: 'Staff notified, coming shortly', remindTitle: 'Which dishes have not arrived yet?',
     remindSub: 'Please tick the dishes you are still waiting for, and we will let the kitchen know right away.', remindBtn: 'Let the kitchen know',
     remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
     busy1: 'We are a little busy right now, so food may take about {m} minutes longer. Thank you for your patience!', busy2: 'We are very busy right now, so food may take about {m} minutes longer. Thank you for your patience and understanding!',
@@ -263,7 +269,7 @@ const T = {
     cancelled: 'Dibatalkan', tabMine: 'Pesanan saya', tabTable: 'Seluruh meja', stNew: 'Diterima', stDone: 'Disahkan', tableTotal: 'Jumlah meja',
     tableNote: 'Semua pesanan meja anda sepanjang kunjungan ini', closedT: 'Terima kasih kerana menjamu selera bersama kami!', closedS: 'Kami harap dapat berjumpa lagi. Jika ingin memesan lagi, sila imbas kod QR di meja anda.',
     callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
-    callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Masih menunggu hidangan?', remindTitle: 'Hidangan mana yang belum sampai?',
+    callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Ingatkan pelayan: hidangan belum sampai', callDone: 'Pelayan dimaklumkan, akan datang', remindTitle: 'Hidangan mana yang belum sampai?',
     remindSub: 'Sila tandakan hidangan yang masih ditunggu, dan kami akan memaklumkan dapur dengan segera.', remindBtn: 'Maklumkan dapur',
     remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
     busy1: 'Kami agak sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran anda!', busy2: 'Kami sangat sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran dan pengertian anda!',
@@ -281,8 +287,8 @@ const T = {
     noticeTxt: '手机点餐 · 柜台付款', confirmClear: '确定要移除购物车里的全部菜品吗？', dineIn: '堂食', takeaway: '外带', howServe: '请问堂食还是外带？',
     cancelled: '已取消', tabMine: '我的订单', tabTable: '本桌订单', stNew: '已收到', stDone: '已确认', tableTotal: '本桌合计',
     tableNote: '本桌这次用餐的所有订单', closedT: '谢谢光临，欢迎再来！', closedS: '期待再次为您服务。如需再点餐，请重新扫描桌上的二维码。',
-    callStaff: '呼叫服务员', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
-    callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '还有菜没上吗？', remindTitle: '请问哪些菜还没上桌？',
+    callStaff: '请服务员过来', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
+    callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '提醒服务员：还有菜未上桌', callDone: '已通知服务员，马上过来', remindTitle: '请问哪些菜还没上桌？',
     remindSub: '请勾选还在等待的菜品，我们会马上通知厨房。', remindBtn: '通知厨房',
     remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
     busy1: '目前用餐人数较多，出餐可能需要多等约 {m} 分钟，感谢您的耐心等候！', busy2: '目前非常繁忙，出餐可能需要多等约 {m} 分钟，感谢您的耐心与谅解！',
@@ -342,12 +348,12 @@ function renderPage() {
         <div class="brand"><div class="logo">${esc(initial)}</div>
           <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>
         <div class="hero-actions">
-          <button class="icon-btn" id="callBtn" aria-label="${esc(t('callStaff'))}">${ICON.bell}</button>
           <button class="icon-btn" id="histBtn" aria-label="${esc(t('orders'))}">${ICON.receipt}</button>
           <button class="icon-btn" id="langBtn" aria-label="${esc(t('language'))}"><span>${{ en: 'EN', ms: 'BM', zh: '中' }[lang]}</span></button>
         </div>
       </div>
       <div class="notice">${ICON.counter.replace('<svg', '<svg width="16" height="16"')}<span>${esc(t('noticeTxt'))}</span></div>
+      <button class="call-btn${callCooldown > Date.now() ? ' sent' : ''}" id="callBtn">${callCooldown > Date.now() ? ICON.check + esc(t('callDone')) : ICON.bell + esc(t('callStaff'))}</button>
       <div id="busyBar">${busyHTML()}</div>
     </header>
     <nav class="tabs"><div class="tabs-scroll" id="tabs">${tabs}</div></nav>
@@ -582,7 +588,7 @@ function drawHistory() {
   sh.querySelectorAll('[data-h]').forEach((b) => { b.classList.toggle('on', b.dataset.h === histTab); b.onclick = () => { histTab = b.dataset.h; drawHistory(); }; });
   const body = sh.querySelector('.sheet-body'); const keep = body.scrollTop;
   const live = histOrders.filter((o) => o.status !== 'void');
-  const cta = live.length ? `<button class="remind-cta" id="remindCta">${ICON.clock}${esc(t('notArrived'))}</button>` : '';
+  const cta = live.length ? `<button class="remind-cta" id="remindCta">${ICON.bell}<span>${esc(t('notArrived'))}</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>` : '';
   if (histTab === 'mine') {
     const mine = histOrders.filter((o) => o.mine);
     body.innerHTML = mine.length ? cta + mine.map((o) => `
@@ -618,21 +624,25 @@ async function openHistory() {
   histTimer = setInterval(async () => {   // keep "Confirmed" status and the whole-table list up to date
     if (!$('histSheet').classList.contains('show')) return clearInterval(histTimer);
     if (await fetchSeatOrders()) drawHistory();
-  }, 5000);
+  }, 3000);
 }
 
 // ---------------- call staff ----------------
-function openCall() {
-  const reasons = [['water', 'rWater'], ['cutlery', 'rCutlery'], ['sauce', 'rSauce'], ['other', 'rOther']];
-  $('svcSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('callTitle'))}</h3><button class="close" data-close>${ICON.close}</button></div>
-    <div class="sheet-body" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">${reasons.map(([k, label]) => `<button class="reason" data-r="${k}">${esc(t(label))}</button>`).join('')}</div>`;
-  const sh = $('svcSheet'); sh.querySelector('[data-close]').onclick = closeSheets;
-  sh.querySelectorAll('[data-r]').forEach((b) => b.onclick = () => sendService({ type: 'call', reason: b.dataset.r }, t('callSent')));
-  showSheet(sh);
+// One tap: "please come to our table". Button shows a confirmation for a minute to avoid repeated taps.
+let callCooldown = 0;
+async function openCall() {
+  if (callCooldown > Date.now()) return toast(t('callSent'));
+  if (await sendService({ type: 'call', reason: 'other' }, t('callSent'))) {
+    callCooldown = Date.now() + 60000; renderCallBtn(); setTimeout(renderCallBtn, 60500);
+  }
+}
+function renderCallBtn() {
+  const b = $('callBtn'); if (!b) return; const on = callCooldown > Date.now();
+  b.classList.toggle('sent', on); b.innerHTML = on ? ICON.check + esc(t('callDone')) : ICON.bell + esc(t('callStaff'));
 }
 async function sendService(payload, okMsg) {
-  try { await api('/api/service', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seat: seat.key, ...payload }) }); closeSheets(); toast(okMsg); }
-  catch (e) { if (e.data?.error === 'SEAT_CLOSED') return showClosed(); toast(e.status === 429 ? t('tooMany') : t('netErr')); }
+  try { await api('/api/service', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seat: seat.key, ...payload }) }); closeSheets(); toast(okMsg); return true; }
+  catch (e) { if (e.data?.error === 'SEAT_CLOSED') { showClosed(); return false; } toast(e.status === 429 ? t('tooMany') : t('netErr')); return false; }
 }
 
 // ---------------- "still waiting for a dish?" ----------------
@@ -670,7 +680,7 @@ async function checkSeat() {
     return true;
   } catch (e) { if (e.status === 410) { showClosed(); return false; } }
 }
-setInterval(() => { if (document.visibilityState === 'visible') checkSeat(); }, 20000);
+setInterval(() => { if (document.visibilityState === 'visible') checkSeat(); }, 3000); // light request: busy notice + table-cleared check
 
 // ---------------- misc ----------------
 let toastTimer;

@@ -57,8 +57,8 @@
   .hist-bar input { font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
   .hist-bar .sum { margin-left: auto; color: var(--muted); font-size: 14px; }
   .btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 10px; font-weight: 600; }
-  .hrow { background: var(--surface); border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: start; }
-  .hrow .tb { font-size: 22px; font-weight: 800; }
+  .hrow { background: var(--surface); border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; display: grid; grid-template-columns: 120px 1fr auto; gap: 12px; align-items: start; }
+  .hrow .tb { font-size: 19px; font-weight: 800; }
   .hrow .meta { font-size: 13px; color: var(--muted); }
   .hrow .its { font-size: 15px; }
   .hrow .its div { padding: 2px 0; }
@@ -159,7 +159,7 @@ const S = {
     dining: '用餐中 · {d}', idle: '空闲', nPending: '{n} 张待输入', tablesHint: '客人结账后，请点该桌并"清台"。清台后，客人手机上的点单页会失效，需重新扫描桌上的二维码才能再点。超过 {h} 小时没有新订单的桌子会自动清台。',
     min: '{n} 分钟', hm: '{h} 小时 {m} 分', tableN: '{t} 号桌', diningFor: '用餐 {d}', close: '关闭', noOrderYet: '客人已扫码，还没有下单。', idleTable: '这张桌子目前空闲，客人扫码后会自动开台。',
     clear: '清台（客人已结账离开）', clearConfirm: '确定为 {t} 号桌清台吗？', clearWarn: '提醒：还有 {n} 张单没有输入收银机。', cleared: '{t} 号桌已清台', entered: '已输入',
-    call: '呼叫服务员', remind: '催菜', rwater: '需要加水', rcutlery: '需要餐具或纸巾', rsauce: '需要酱料或辣椒', rother: '请服务员过去一下', handled: '已处理', orderedAgo: '下单 {n} 分钟', reqTitle: '客人服务提醒' },
+    call: '呼叫服务员', remind: '催菜', rwater: '需要加水', rcutlery: '需要餐具或纸巾', rsauce: '需要酱料或辣椒', rother: '客人请服务员过去', handled: '已处理', orderedAgo: '下单 {n} 分钟', reqTitle: '客人服务提醒' },
   en: { title: 'Orders', pending: 'To enter', tables: 'Tables', history: 'History', qr: 'QR codes', soundOn: 'Sound: on', soundOff: 'Sound: off', conn: 'Connection',
     busy0: 'Kitchen: normal', busy1: 'Kitchen: busy', busy2: 'Kitchen: very busy', busySet0: 'Back to normal. The waiting notice for guests is now off.', busySet: 'Guests will now see: food may take about {m} minutes longer.',
     start: 'Start taking orders', startSub: 'Please tap to start. The tablet will ring for new orders and guest requests, and the screen will stay on.', login: 'Staff login', loginSub: 'Please enter the staff PIN', tooMany: 'Too many attempts. Please try again shortly.', badPin: 'Incorrect PIN, please try again',
@@ -376,7 +376,7 @@ async function renderHistory() {
     const j = await api('/api/staff/history?day=' + histDay);
     $('histSum').textContent = tr('nDay', { n: j.orders.length });
     $('histList').innerHTML = j.orders.length ? j.orders.map((o) => `<div class="hrow">
-      <div><div class="tb">${esc(o.table)}</div><div class="meta">#${o.seq} · ${hhmm(o.createdAt)}</div></div>
+      <div><div class="tb">${esc(tr('tableN', { t: o.table }))}</div><div class="meta">#${o.seq} · ${hhmm(o.createdAt)}</div></div>
       <div class="its">${o.lines.map((l) => `<div>${l.qty} × ${esc(L(l.name))}${l.takeaway ? `<span class="ta" style="font-size:12px">${esc(tr('takeaway'))}</span>` : ''}${l.options.length ? ` <span class="o">(${esc(l.options.map((x) => L(x.choice)).join(' · '))})</span>` : ''}${l.note ? ` <span class="o">${esc(tr('note'))}: ${esc(l.note)}</span>` : ''}</div>`).join('')}<div class="meta" style="margin-top:4px">${esc(tr('total'))} ${rm(o.total)}</div></div>
       <div style="text-align:right">${o.status === 'done' ? `<span class="tag done">${esc(tr('enteredAt', { h: o.doneAt ? hhmm(o.doneAt) : '' }))}</span><button class="undo-link" data-undo="${o.id}">${esc(tr('backToPending'))}</button>`
         : o.status === 'void' ? `<span class="tag void">${esc(tr('voided'))}</span><button class="undo-link" data-undo="${o.id}">${esc(tr('restore'))}</button>` : `<span class="tag new">${esc(tr('pendingTag'))}</span>`}</div>
