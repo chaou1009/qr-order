@@ -69,6 +69,25 @@
   .undo-link { border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 13px; padding: 6px 0; margin-top: 6px; display: block; }
   @media (max-width: 560px) { .hrow { grid-template-columns: 60px 1fr; } .hrow > :last-child { grid-column: 2; } }
 
+  .tgrid { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .tile { border: 0; text-align: left; background: var(--surface); border-radius: 18px; padding: 14px 16px; min-height: 130px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 2px solid transparent; }
+  .tile .tn { font-size: 30px; font-weight: 800; line-height: 1; }
+  .tile .tn small { font-size: 13px; color: var(--muted); font-weight: 600; margin-right: 4px; }
+  .tile .st { font-size: 13px; font-weight: 700; color: var(--muted); margin-top: auto; }
+  .tile .amt { font-size: 18px; font-weight: 800; }
+  .tile.busy { border-color: var(--accent); background: #fffaf7; }
+  .tile.busy .st { color: var(--accent-ink); }
+  .tile .pend { align-self: flex-start; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+  .tile.idle { opacity: .7; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 45; display: grid; place-items: center; padding: 16px; }
+  .modal { background: var(--surface); border-radius: 20px; width: min(560px, 100%); max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-h { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  .modal-h h3 { margin: 0; font-size: 20px; }
+  .modal-b { overflow-y: auto; padding: 6px 18px; }
+  .modal-f { padding: 14px 18px; border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: center; }
+  .mo { padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
+  .mo .meta { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .clear-btn { flex: 1; border: 0; background: var(--ink); color: #fff; font-weight: 800; font-size: 17px; padding: 14px; border-radius: 12px; }
   .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(29,27,25,.96); color: #fff; display: grid; place-items: center; text-align: center; padding: 24px; }
   .overlay h2 { font-size: 26px; margin: 0 0 8px; }
   .overlay p { opacity: .75; margin: 0 0 24px; }
@@ -91,7 +110,7 @@
 <body>
 <div class="top">
   <h1 id="title">接单</h1>
-  <div class="seg"><button id="tabLive" class="on">待输入 <span class="count" id="liveCount">0</span></button><button id="tabHist">历史订单</button></div>
+  <div class="seg"><button id="tabLive" class="on">待输入 <span class="count" id="liveCount">0</span></button><button id="tabTables">桌台</button><button id="tabHist">历史订单</button></div>
   <a class="pill" href="/staff/qr" target="_blank" style="text-decoration:none">二维码</a>
   <button class="pill" id="soundBtn">🔔 声音开</button>
   <button class="pill" id="langBtn">中 / EN</button>
@@ -195,7 +214,7 @@ async function poll() {
     $('netDot').classList.remove('off');
     $('liveCount').textContent = orders.length;
     document.title = (orders.length ? `(${orders.length}) ` : '') + '接单平板';
-    if (view === 'live') render();
+    if (view === 'live') render(); else if (view === 'tables') renderTables();
   } catch (e) { if (e.message !== 'login') $('netDot').classList.add('off'); }
 }
 const recentlyUndone = new Set();
@@ -256,13 +275,58 @@ async function renderHistory() {
     $('histList').querySelectorAll('[data-undo]').forEach((b) => b.onclick = async () => { await api(`/api/staff/orders/${b.dataset.undo}/undo`, { method: 'POST' }); recentlyUndone.add(Number(b.dataset.undo)); renderHistory(); poll(); });
   } catch (e) { if (e.message !== 'login') $('histList').textContent = '加载失败，请重试'; }
 }
-$('tabLive').onclick = () => { view = 'live'; $('tabLive').classList.add('on'); $('tabHist').classList.remove('on'); render(); };
-$('tabHist').onclick = () => { view = 'hist'; $('tabHist').classList.add('on'); $('tabLive').classList.remove('on'); renderHistory(); };
+function setView(v) { view = v; [['live', 'tabLive'], ['tables', 'tabTables'], ['hist', 'tabHist']].forEach(([k, id]) => $(id).classList.toggle('on', k === v));
+  if (v === 'live') render(); else if (v === 'hist') renderHistory(); else renderTables(); }
+$('tabLive').onclick = () => setView('live');
+$('tabTables').onclick = () => setView('tables');
+$('tabHist').onclick = () => setView('hist');
+
+// ---------- tables: who is dining, clear table ----------
+let tableData = null, openModal = null;
+const mins = (ms) => { const m = Math.max(0, Math.floor(ms / 60000)); return m < 60 ? m + ' 分钟' : Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分'; };
+async function renderTables() {
+  if (view !== 'tables') return;
+  try { tableData = await api('/api/staff/table-status'); } catch { return; }
+  if (view !== 'tables') return;
+  const now = tableData.now;
+  $('view').innerHTML = `<div class="tgrid">${tableData.tables.map((t) => { const s = t.session;
+    return s ? `<button class="tile busy" data-t="${t.id}"><div class="tn"><small>桌</small>${esc(t.name)}</div>${s.pending ? `<span class="pend">${s.pending} 张待输入</span>` : ''}
+        <div class="amt">${rm(s.total)}</div><div class="st">用餐中 · ${mins(now - s.openedAt)}</div></button>`
+      : `<button class="tile idle" data-t="${t.id}"><div class="tn"><small>桌</small>${esc(t.name)}</div><div class="st">空闲</div></button>`; }).join('')}</div>
+    <p style="text-align:center;color:var(--muted);font-size:13px;padding:0 16px 20px">客人结账后请点该桌"清台"。清台后，客人手机上的点单页会失效，要重新扫桌上的二维码才能再点。超过 ${tableData.autoCloseHours} 小时没有新订单的桌子会自动清台。</p>`;
+  $('view').querySelectorAll('[data-t]').forEach((b) => b.onclick = () => showTable(Number(b.dataset.t)));
+  if (openModal) { const j = JSON.stringify(tableData.tables.find((x) => x.id === openModal)); if (j !== lastModalJson) showTable(openModal); }
+}
+let lastModalJson = '';
+function closeModal() { openModal = null; const m = document.querySelector('.modal-bg'); if (m) m.remove(); }
+function showTable(id) {
+  const t = tableData?.tables.find((x) => x.id === id); if (!t) return closeModal();
+  openModal = id; lastModalJson = JSON.stringify(t); const s = t.session;
+  const body = s ? s.orders.map((o) => `<div class="mo"><div class="meta"><b style="color:var(--ink)">#${o.seq}</b>${hhmm(o.createdAt)}
+      ${o.status === 'done' ? '<span class="tag done">已输入</span>' : o.status === 'void' ? '<span class="tag void">已作废</span>' : '<span class="tag new">待输入</span>'}<span style="margin-left:auto">${rm(o.total)}</span></div>
+      ${o.lines.map((l) => `<div>${l.qty} × ${esc(L(l.name))}${l.takeaway ? '<span class="ta" style="font-size:12px">外带</span>' : ''}</div>`).join('')}</div>`).join('') || '<p style="color:var(--muted)">客人已扫码，还没有下单。</p>'
+    : '<p style="color:var(--muted);padding:20px 0">这张桌子目前空闲。客人扫码后会自动开台。</p>';
+  document.querySelector('.modal-bg')?.remove();
+  const el = document.createElement('div'); el.className = 'modal-bg';
+  el.innerHTML = `<div class="modal"><div class="modal-h"><h3>${esc(t.name)} 号桌 ${s ? `<span style="font-size:14px;color:var(--muted);font-weight:600">· 用餐 ${mins(tableData.now - s.openedAt)}</span>` : ''}</h3><button class="btn" data-x>关闭</button></div>
+    <div class="modal-b">${body}</div>
+    ${s ? `<div class="modal-f"><div style="font-weight:800;font-size:18px">合计 ${rm(s.total)}</div><button class="clear-btn" data-clear="${s.id}">清台（客人已结账离开）</button></div>` : ''}</div>`;
+  document.body.appendChild(el);
+  el.onclick = (e) => { if (e.target === el || e.target.closest('[data-x]')) closeModal(); };
+  const cb = el.querySelector('[data-clear]');
+  if (cb) cb.onclick = async () => {
+    const warn = s.pending ? `\n\n注意：还有 ${s.pending} 张单没输入收银机！` : '';
+    if (!confirm(`确定把 ${t.name} 号桌清台？${warn}`)) return;
+    await api(`/api/staff/sessions/${s.id}/clear`, { method: 'POST' });
+    closeModal(); renderTables(); showToast(`${t.name} 号桌已清台`, null);
+  };
+}
 
 // ---------- misc ----------
 let toastTimer, bannerTimer;
 function showToast(msg, undo) {
   $('toastMsg').textContent = msg; $('toast').classList.add('show');
+  $('toastBtn').style.display = undo ? '' : 'none';
   $('toastBtn').onclick = async () => { $('toast').classList.remove('show'); await undo(); };
   clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 6000);
 }

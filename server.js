@@ -16,6 +16,8 @@ const TZ = process.env.TZ_NAME || 'Asia/Kuala_Lumpur';
 const RESTAURANT_NAME = process.env.RESTAURANT_NAME || 'My Restaurant';
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, ''); // e.g. https://order.myshop.com
 const DEMO = process.env.DEMO === '1';
+// A table's dining session ends when staff taps "clear table", or automatically after this many hours without new orders.
+const AUTO_CLOSE_HOURS = Number(process.env.AUTO_CLOSE_HOURS || 3);
 // This computer's address on the shop Wi-Fi, so phones on the same Wi-Fi can open the QR links.
 function lanUrl() {
   const nets = Object.values(require('node:os').networkInterfaces()).flat()
@@ -52,10 +54,20 @@ CREATE TABLE IF NOT EXISTS orders (
   items TEXT NOT NULL, total INTEGER NOT NULL, note TEXT,
   status TEXT NOT NULL DEFAULT 'new', created_at INTEGER NOT NULL, done_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS table_sessions (
+  id INTEGER PRIMARY KEY, table_id INTEGER NOT NULL, opened_at INTEGER NOT NULL,
+  last_activity INTEGER NOT NULL, closed_at INTEGER, closed_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_table ON table_sessions(table_id, closed_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_day ON orders(day);
 CREATE INDEX IF NOT EXISTS idx_orders_client ON orders(client_id);
 `);
+
+if (!db.prepare('PRAGMA table_info(orders)').all().some((c) => c.name === 'session_id')) {
+  db.exec('ALTER TABLE orders ADD COLUMN session_id INTEGER');
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(session_id)');
 
 const newToken = () => crypto.randomBytes(9).toString('base64url'); // 12 chars, unguessable
 
@@ -118,6 +130,34 @@ function limited(key, max, windowMs) {
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.some((t) => now - t < 3600e3)) hits.delete(k); }, 600e3).unref();
 
+// ---------- table dining sessions ----------
+// Scanning a table's QR opens (or joins) that table's current session and gives the phone a "seat key".
+// The seat key stops working once staff clears the table, so a guest who has left cannot keep ordering
+// from the old browser tab or history — they would need to scan the physical QR code again.
+const staleBefore = () => Date.now() - AUTO_CLOSE_HOURS * 3600e3;
+function openSessionFor(tableId) {
+  const cur = db.prepare('SELECT * FROM table_sessions WHERE table_id = ? AND closed_at IS NULL ORDER BY id DESC LIMIT 1').get(tableId);
+  if (cur && cur.last_activity >= staleBefore()) {
+    db.prepare('UPDATE table_sessions SET last_activity = ? WHERE id = ?').run(Date.now(), cur.id); // a fresh scan = guests still here
+    return cur;
+  }
+  if (cur) db.prepare("UPDATE table_sessions SET closed_at = ?, closed_by = 'auto' WHERE id = ?").run(cur.last_activity + AUTO_CLOSE_HOURS * 3600e3, cur.id);
+  const now = Date.now();
+  const r = db.prepare('INSERT INTO table_sessions (table_id, opened_at, last_activity) VALUES (?, ?, ?)').run(tableId, now, now);
+  return db.prepare('SELECT * FROM table_sessions WHERE id = ?').get(Number(r.lastInsertRowid));
+}
+const seatKeyFor = (sid) => `${sid}.${sign('seat:' + sid).slice(0, 22)}`;
+// Returns the open session + table for a seat key, or null if the key is invalid or the table was cleared.
+function seatFromKey(key) {
+  const m = /^(\d+)\.([\w-]{22})$/.exec(String(key || ''));
+  if (!m || seatKeyFor(m[1]) !== m[0]) return null;
+  const sess = db.prepare('SELECT * FROM table_sessions WHERE id = ?').get(Number(m[1]));
+  if (!sess || sess.closed_at || sess.last_activity < staleBefore()) return null;
+  const table = db.prepare('SELECT id, name FROM tables WHERE id = ? AND active = 1').get(sess.table_id);
+  return table ? { sess, table } : null;
+}
+function closeSession(id, by) { db.prepare('UPDATE table_sessions SET closed_at = ?, closed_by = ? WHERE id = ? AND closed_at IS NULL').run(Date.now(), by, id); }
+
 // ---------- menu ----------
 function loadMenu() {
   const cats = db.prepare('SELECT * FROM categories ORDER BY sort, id').all();
@@ -176,15 +216,24 @@ async function handle(req, res) {
   const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
 
   // Customer page: /t/<token>  (the token printed in each table's fixed QR code)
-  if (req.method === 'GET' && /^\/t\/[\w-]{6,40}$/.test(p)) return serveFile(res, path.join(PUBLIC_DIR, 'order.html'));
+  if (req.method === 'GET' && (/^\/t\/[\w-]{6,40}$/.test(p) || p === '/o')) return serveFile(res, path.join(PUBLIC_DIR, 'order.html'));
   if (req.method === 'GET' && (p === '/staff' || p === '/staff/')) return serveFile(res, path.join(PUBLIC_DIR, 'staff.html'));
   if (req.method === 'GET' && p === '/staff/qr') return serveFile(res, path.join(PUBLIC_DIR, 'qr.html'));
   if (req.method === 'GET' && p === '/') return serveFile(res, path.join(PUBLIC_DIR, 'home.html'));
 
   // ----- public API -----
-  if (p.startsWith('/api/table/') && req.method === 'GET') {
-    const t = db.prepare('SELECT id, name FROM tables WHERE token = ? AND active = 1').get(p.slice(11));
-    return t ? send(res, 200, t) : send(res, 404, { error: 'TABLE_NOT_FOUND' });
+  // Called right after a QR scan: open/join the table's session and hand out a seat key.
+  if (p === '/api/checkin' && req.method === 'POST') {
+    if (limited('c:' + ip, 60, 10 * 60e3)) return send(res, 429, { error: 'TOO_MANY' });
+    const body = await readBody(req).catch(() => null);
+    const t = db.prepare('SELECT id, name FROM tables WHERE token = ? AND active = 1').get(String(body?.token || ''));
+    if (!t) return send(res, 404, { error: 'TABLE_NOT_FOUND' });
+    const sess = openSessionFor(t.id);
+    return send(res, 200, { seat: seatKeyFor(sess.id), table: t.name });
+  }
+  if (p === '/api/seat' && req.method === 'GET') {
+    const seat = seatFromKey(url.searchParams.get('key'));
+    return seat ? send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at }) : send(res, 410, { error: 'SEAT_CLOSED' });
   }
   if (p === '/api/config' && req.method === 'GET') return send(res, 200, { name: RESTAURANT_NAME, publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO });
   if (DEMO && req.method === 'GET' && p === '/demo') return serveFile(res, path.join(PUBLIC_DIR, 'demo.html'));
@@ -199,8 +248,9 @@ async function handle(req, res) {
     if (!body || !Array.isArray(body.lines) || !body.lines.length || body.lines.length > 60) return send(res, 400, { error: 'EMPTY' });
     const clientId = String(body.clientId || '');
     if (!/^[\w-]{10,64}$/.test(clientId)) return send(res, 400, { error: 'BAD_CLIENT' });
-    const table = db.prepare('SELECT id, name FROM tables WHERE token = ? AND active = 1').get(String(body.table || ''));
-    if (!table) return send(res, 404, { error: 'TABLE_NOT_FOUND' });
+    const seat = seatFromKey(body.seat);
+    if (!seat) return send(res, 410, { error: 'SEAT_CLOSED' });
+    const { table, sess } = seat;
     const itemsById = new Map(db.prepare('SELECT * FROM items').all().map((i) => [i.id, i]));
     let lines;
     try { lines = body.lines.map((l) => priceLine(l, itemsById)); }
@@ -208,18 +258,21 @@ async function handle(req, res) {
     const total = lines.reduce((s, l) => s + l.unit * l.qty, 0);
     const now = Date.now(); const day = dayOf(now);
     const seq = db.prepare('SELECT COALESCE(MAX(seq), 0) + 1 AS n FROM orders WHERE day = ?').get(day).n;
-    const r = db.prepare('INSERT INTO orders (day, seq, table_id, table_name, client_id, items, total, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(day, seq, table.id, table.name, clientId, JSON.stringify(lines), total, now);
+    const r = db.prepare('INSERT INTO orders (day, seq, table_id, table_name, client_id, items, total, created_at, session_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(day, seq, table.id, table.name, clientId, JSON.stringify(lines), total, now, sess.id);
+    db.prepare('UPDATE table_sessions SET last_activity = ? WHERE id = ?').run(now, sess.id);
     return send(res, 201, { id: Number(r.lastInsertRowid), seq, total, createdAt: now });
   }
 
-  // This device's own orders (last 24h) — previous guests' orders are never shown.
-  if (p === '/api/my-orders' && req.method === 'GET') {
+  // Orders of the current dining session at this table only — previous guests' orders are never shown.
+  // "mine" marks the ones placed from this phone.
+  if (p === '/api/seat-orders' && req.method === 'GET') {
+    const seat = seatFromKey(url.searchParams.get('key'));
+    if (!seat) return send(res, 410, { error: 'SEAT_CLOSED' });
     const clientId = url.searchParams.get('clientId') || '';
-    if (!/^[\w-]{10,64}$/.test(clientId)) return send(res, 200, { orders: [] });
-    const rows = db.prepare('SELECT id, seq, table_name, items, total, status, created_at FROM orders WHERE client_id = ? AND created_at > ? ORDER BY id DESC LIMIT 30')
-      .all(clientId, Date.now() - 24 * 3600e3);
-    return send(res, 200, { orders: rows.map((o) => ({ id: o.id, seq: o.seq, table: o.table_name, lines: parseJSON(o.items, []), total: o.total, status: o.status, createdAt: o.created_at })) });
+    const rows = db.prepare('SELECT id, seq, table_name, client_id, items, total, status, created_at FROM orders WHERE session_id = ? ORDER BY id DESC').all(seat.sess.id);
+    return send(res, 200, { table: seat.table.name, orders: rows.map((o) => ({ id: o.id, seq: o.seq, table: o.table_name, mine: o.client_id === clientId,
+      lines: parseJSON(o.items, []), total: o.total, status: o.status, createdAt: o.created_at })) });
   }
 
   // ----- staff API -----
@@ -248,6 +301,23 @@ async function handle(req, res) {
     if ((m = /^\/api\/staff\/orders\/(\d+)\/(done|undo|void)$/.exec(p)) && req.method === 'POST') {
       const status = { done: 'done', undo: 'new', void: 'void' }[m[2]];
       db.prepare('UPDATE orders SET status = ?, done_at = ? WHERE id = ?').run(status, status === 'new' ? null : Date.now(), Number(m[1]));
+      return send(res, 200, { ok: true });
+    }
+    // Table overview for the "tables" tab: who is dining, since when, how much ordered.
+    if (p === '/api/staff/table-status' && req.method === 'GET') {
+      const tables = db.prepare('SELECT id, name FROM tables WHERE active = 1 ORDER BY sort, id').all();
+      const out = tables.map((t) => {
+        const s = db.prepare('SELECT * FROM table_sessions WHERE table_id = ? AND closed_at IS NULL ORDER BY id DESC LIMIT 1').get(t.id);
+        if (!s || s.last_activity < staleBefore()) return { id: t.id, name: t.name, session: null };
+        const orders = db.prepare('SELECT * FROM orders WHERE session_id = ? ORDER BY id').all(s.id).map(mapOrder);
+        const live = orders.filter((o) => o.status !== 'void');
+        return { id: t.id, name: t.name, session: { id: s.id, openedAt: s.opened_at, lastActivity: s.last_activity,
+          orders, total: live.reduce((a, o) => a + o.total, 0), pending: orders.filter((o) => o.status === 'new').length } };
+      });
+      return send(res, 200, { tables: out, now: Date.now(), autoCloseHours: AUTO_CLOSE_HOURS });
+    }
+    if ((m = /^\/api\/staff\/sessions\/(\d+)\/clear$/.exec(p)) && req.method === 'POST') {
+      closeSession(Number(m[1]), 'staff');
       return send(res, 200, { ok: true });
     }
     if (p === '/api/staff/tables' && req.method === 'GET') {
