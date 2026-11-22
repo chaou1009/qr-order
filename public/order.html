@@ -38,8 +38,13 @@
   .tab.active { background: var(--ink); color: var(--surface); }
 
   /* ---------- menu ---------- */
-  .section { padding: 18px 16px 4px; scroll-margin-top: 58px; }
-  .section h2 { font-size: 17px; margin: 0 0 6px; }
+  main { background: var(--bg); padding-top: 12px; }
+  .section { background: var(--surface); margin: 0 0 14px; padding: 16px 16px 2px; scroll-margin-top: 66px; box-shadow: 0 1px 0 var(--line), 0 -1px 0 var(--line); }
+  @media (min-width: 560px) { .section { margin: 0 10px 12px; border-radius: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.05); } }
+  .section h2 { font-size: 19px; margin: 0; padding-bottom: 12px; border-bottom: 2px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .section h2 .bar { width: 4px; height: 20px; border-radius: 2px; background: var(--accent); flex: none; }
+  .section h2 .cnt { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--chip); padding: 2px 9px; border-radius: 999px; }
+  body[data-theme] .section h2 .bar { display: none; }
   .item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .item:last-child { border-bottom: 0; }
   .item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -59,7 +64,7 @@
   .stock-note { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 3px 8px; align-self: flex-start; }
   .stock-note.out { color: var(--muted); background: var(--chip); }
   .item.soldout .stock-note { color: var(--muted); background: var(--chip); }
-  .footer-space { text-align: center; color: var(--muted-2); font-size: 12px; padding: 24px 16px; }
+  .footer-space { background: var(--bg); text-align: center; color: var(--muted-2); font-size: 12px; padding: 24px 16px; }
 
   /* ---------- cart bar ---------- */
   .cartbar { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 30; max-width: 640px; margin: 0 auto;
@@ -402,7 +407,7 @@ function renderPage() {
   document.title = config.name || 'Menu';
   const initial = (config.name || 'R').trim().charAt(0).toUpperCase();
   const tabs = menu.map((c, i) => `<button class="tab${i === 0 ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
-  const sections = menu.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2>${esc(L(c.name))}</h2>${c.items.map(itemRow).join('')}</section>`).join('');
+  const sections = menu.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2><span class="bar"></span>${esc(L(c.name))}<span class="cnt">${c.items.length}</span></h2>${c.items.map(itemRow).join('')}</section>`).join('');
   $('app').innerHTML = `
     <header class="hero">
       <div id="festBar"></div>
@@ -428,7 +433,7 @@ function renderPage() {
   $('callBtn').onclick = openCall;
   $('langBtn').onclick = (e) => { e.stopPropagation(); toggleLang(); };
   $('tabs').onclick = (e) => { const b = e.target.closest('.tab'); if (!b) return; const s = $('cat-' + b.dataset.cat);
-    scrollLock = Date.now(); setActiveTab(b.dataset.cat); window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 56, behavior: 'smooth' }); };
+    scrollLock = Date.now(); setActiveTab(b.dataset.cat); window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 62, behavior: 'smooth' }); };
   document.querySelector('main').onclick = (e) => { const row = e.target.closest('.item'); if (!row || row.classList.contains('soldout')) return; openItem(Number(row.dataset.id)); };
   renderCartBar();
 }
