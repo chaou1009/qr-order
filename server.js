@@ -147,7 +147,8 @@ function hasCookie(req, role) {
   const good = sign(role + exp);
   return sig.length === good.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(good));
 }
-const isAdmin = (req) => hasCookie(req, 'admin');
+// Staff can also manage the menu unless a separate ADMIN_PIN is set.
+const isAdmin = (req) => hasCookie(req, 'admin') || (ADMIN_PIN === STAFF_PIN && hasCookie(req, 'staff'));
 const isStaff = (req) => hasCookie(req, 'staff') || isAdmin(req);
 const pinOk = (pin, want) => pin.length === want.length && crypto.timingSafeEqual(Buffer.from(pin), Buffer.from(want));
 
@@ -298,9 +299,9 @@ async function handle(req, res) {
     const seat = seatFromKey(url.searchParams.get('key'));
     if (!seat) return send(res, 410, { error: 'SEAT_CLOSED' });
     const clientId = url.searchParams.get('clientId') || '';
-    const c = db.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(client_id = ?), 0) AS mine FROM orders WHERE session_id = ? AND status != 'void'").get(clientId, seat.sess.id);
-    return send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at, busy: busyInfo(), now: Date.now(), theme: getSetting('theme', 'default'),
-      orderCount: c.n, mineCount: c.mine, avail: availability(clientId) });
+    const c = db.prepare("SELECT COALESCE(SUM(status != 'void'), 0) AS n, COALESCE(SUM(client_id = ? AND status != 'void'), 0) AS mine, COUNT(*) AS all_n FROM orders WHERE session_id = ?").get(clientId, seat.sess.id);
+    return send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at, busy: busyInfo(), now: Date.now(), ...themeInfo(),
+      orderCount: c.n, mineCount: c.mine, allCount: c.all_n, avail: availability(clientId) });
   }
   // The guest's cart for limited dishes: reserve those portions for a few minutes so other guests see them as taken.
   if (p === '/api/holds' && req.method === 'POST') {
@@ -351,7 +352,7 @@ async function handle(req, res) {
       .run(seat.sess.id, seat.table.id, seat.table.name, type, JSON.stringify(detail), Date.now());
     return send(res, 201, { ok: true });
   }
-  if (p === '/api/config' && req.method === 'GET') return send(res, 200, { name: RESTAURANT_NAME, publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO, theme: getSetting('theme', 'default') });
+  if (p === '/api/config' && req.method === 'GET') return send(res, 200, { name: RESTAURANT_NAME, publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO, ...themeInfo() });
   if (DEMO && req.method === 'GET' && p === '/demo') return serveFile(res, path.join(PUBLIC_DIR, 'demo.html'));
   if (DEMO && req.method === 'GET' && p === '/api/demo') {
     return send(res, 200, { tables: db.prepare('SELECT name, token FROM tables WHERE active = 1 ORDER BY sort, id').all(), pin: STAFF_PIN, adminPin: ADMIN_PIN });
@@ -443,6 +444,11 @@ async function handle(req, res) {
     }
     if ((m = /^\/api\/staff\/orders\/(\d+)\/(done|undo|void)$/.exec(p)) && req.method === 'POST') {
       const status = { done: 'done', undo: 'new', void: 'void' }[m[2]];
+      const prev = db.prepare('SELECT status, items FROM orders WHERE id = ?').get(Number(m[1]));
+      if (prev && (prev.status === 'void') !== (status === 'void')) { // voiding gives limited portions back; restoring takes them again
+        const sign = status === 'void' ? 1 : -1;
+        for (const l of parseJSON(prev.items, [])) db.prepare('UPDATE items SET stock = MAX(0, stock + ?) WHERE id = ? AND stock IS NOT NULL').run(sign * l.qty, l.itemId);
+      }
       db.prepare('UPDATE orders SET status = ?, done_at = ? WHERE id = ?').run(status, status === 'new' ? null : Date.now(), Number(m[1]));
       return send(res, 200, { ok: true });
     }
@@ -479,6 +485,10 @@ async function handle(req, res) {
 }
 
 // ---------- back office (admin) API ----------
+function themeInfo() {
+  const theme = getSetting('theme', 'default');
+  return { theme, banner: getSetting('banner:' + theme, '') || null, effects: getSetting('effects', true) !== false };
+}
 const THEMES = ['default', 'cny', 'merdeka', 'raya', 'deepavali', 'gawai', 'christmas'];
 const clean3 = (o, max = 80) => { const r = {}; for (const k of ['en', 'ms', 'zh']) { const v = String(o?.[k] ?? '').trim().slice(0, max); if (v) r[k] = v; } return r; };
 const toSen = (rm) => { const n = Math.round(Number(rm) * 100); return Number.isFinite(n) && n >= 0 && n <= 1e7 ? n : null; };
@@ -599,8 +609,16 @@ async function adminApi(req, res, p, url) {
   }
   // festival theme for the guest page
   if (p === '/api/admin/theme') {
-    if (req.method === 'POST') { if (!THEMES.includes(body?.theme)) return send(res, 400, { error: 'THEME' }); setSetting('theme', body.theme); }
-    return send(res, 200, { theme: getSetting('theme', 'default'), themes: THEMES });
+    if (req.method === 'POST') {
+      if ('theme' in body) { if (!THEMES.includes(body.theme)) return send(res, 400, { error: 'THEME' }); setSetting('theme', body.theme); }
+      if ('effects' in body) setSetting('effects', !!body.effects);
+      if (body.banner) { // custom banner picture for one theme (null = back to the built-in banner)
+        if (!THEMES.includes(body.banner.theme)) return send(res, 400, { error: 'THEME' });
+        const u = body.banner.url; if (u !== null && !/^\/uploads\/[\w-]+\.(jpg|png|webp)$/.test(u || '')) return send(res, 400, { error: 'IMAGE' });
+        setSetting('banner:' + body.banner.theme, u || '');
+      }
+    }
+    return send(res, 200, { ...themeInfo(), themes: THEMES, banners: Object.fromEntries(THEMES.map((t) => [t, getSetting('banner:' + t, '') || null])) });
   }
   return send(res, 404, { error: 'NOT_FOUND' });
 }

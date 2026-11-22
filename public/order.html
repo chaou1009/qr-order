@@ -136,8 +136,10 @@
   .seg2 button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
   .seg2 button.on.ta { color: var(--accent-ink); }
   .ta-tag { display: inline-block; font-size: 11px; font-weight: 800; color: #fff; background: var(--accent); padding: 1px 7px; border-radius: 6px; margin-left: 6px; vertical-align: 2px; }
-  .void-tag { display: inline-block; font-size: 11px; font-weight: 800; color: var(--muted); background: var(--chip); padding: 1px 7px; border-radius: 6px; margin-left: 6px; }
-  .hist.void { opacity: .55; }
+  .void-tag { display: inline-block; font-size: 11px; font-weight: 800; color: #b42318; background: #fde2e1; padding: 1px 7px; border-radius: 6px; margin-left: 6px; }
+  .hist.void .receipt-row { color: var(--muted-2); text-decoration: line-through; }
+  .hist.void .receipt-row .o { text-decoration: none; }
+  .void-note { margin: 0; padding: 8px 14px; font-size: 13px; color: #b42318; background: #fff5f4; }
   .htabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--chip); padding: 4px; border-radius: 12px; margin: 0 16px 8px; }
   .htabs button { border: 0; background: none; padding: 9px; border-radius: 9px; font-weight: 700; color: var(--muted); }
   .htabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
@@ -226,15 +228,36 @@
   body[data-theme=deepavali] { --accent: #c2410c; --accent-ink: #7c2d92; --accent-soft: #f6e8fb; --bg: #fbf5f0; }
   body[data-theme=gawai] { --accent: #a45a13; --accent-ink: #6f3b08; --accent-soft: #f7ead9; --bg: #f8f3ea; }
   body[data-theme=christmas] { --accent: #c0262d; --accent-ink: #11603a; --accent-soft: #e3f2e8; --bg: #f4f6f2; }
-  .fest { display: flex; align-items: center; gap: 10px; margin: -18px -16px 14px; padding: 10px 16px; color: #fff; font-weight: 800; font-size: 14px; line-height: 1.3; overflow: hidden; }
-  .fest span { flex: 1; text-align: center; }
-  .fest svg { width: 30px; height: 30px; flex: none; }
-  .fest.cny { background: linear-gradient(90deg, #b3121b, #e03a2f, #b3121b); color: #ffe08a; }
-  .fest.merdeka { background: linear-gradient(90deg, #0b2a7a 0 40%, #c8102e 40% 100%); color: #ffd400; }
-  .fest.raya { background: linear-gradient(90deg, #0b5a33, #17914f, #0b5a33); color: #ffe7a0; }
-  .fest.deepavali { background: linear-gradient(90deg, #6b21a8, #c2410c, #6b21a8); color: #ffe7a0; }
-  .fest.gawai { background: linear-gradient(90deg, #6f3b08, #b8741f, #6f3b08); color: #fff3d6; }
-  .fest.christmas { background: linear-gradient(90deg, #11603a, #1d8a52, #11603a); color: #fff; }
+  .fest { position: relative; display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 14px 14px; min-height: 78px; border-radius: 18px; color: #fff; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.12); isolation: isolate; }
+  .fest::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: .22; background-image: radial-gradient(circle at 20% 30%, #fff 0 1.2px, transparent 1.6px), radial-gradient(circle at 70% 80%, #fff 0 1px, transparent 1.4px); background-size: 26px 26px, 34px 34px; }
+  .fest::after { content: ''; position: absolute; inset: 5px; z-index: -1; border-radius: 14px; border: 1.5px solid currentColor; opacity: .35; }
+  .fest .txt { flex: 1; text-align: center; min-width: 0; }
+  .fest .g1 { display: block; font-size: 18px; font-weight: 900; line-height: 1.25; letter-spacing: .02em; text-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  .fest .g2 { display: block; font-size: 12px; font-weight: 700; opacity: .85; margin-top: 3px; letter-spacing: .06em; }
+  .fest .ic { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.14); }
+  .fest .ic svg { width: 30px; height: 30px; }
+  .fest .ic.r { animation: sway 3.2s ease-in-out infinite; transform-origin: 50% 0; }
+  .fest .ic.l { animation: sway 3.2s ease-in-out -1.6s infinite; transform-origin: 50% 0; }
+  @keyframes sway { 50% { transform: rotate(7deg); } 0%, 100% { transform: rotate(-7deg); } }
+  .fest canvas, .fest-img canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .fest.cny { background: radial-gradient(120% 140% at 50% 0%, #e8402f, #a80f18 70%); color: #ffd978; }
+  .fest.merdeka { background: linear-gradient(100deg, #0b2a7a 0 22%, #c8102e 30% 100%); color: #ffd400; }
+  .fest.raya { background: radial-gradient(120% 140% at 50% 0%, #1fa25c, #0b5a33 75%); color: #ffe39a; }
+  .fest.deepavali { background: linear-gradient(110deg, #5b1a8f, #b5206b 55%, #e2661b); color: #ffe39a; }
+  .fest.gawai { background: radial-gradient(120% 140% at 50% 0%, #c9852a, #6f3b08 80%); color: #fff1cf; }
+  .fest.christmas { background: radial-gradient(120% 140% at 50% 0%, #1f9a5c, #0d4f30 75%); color: #fff; }
+  .fest-img { position: relative; margin: 0 0 14px; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.12); background: var(--chip); }
+  .fest-img img { display: block; width: 100%; height: auto; max-height: 220px; object-fit: cover; }
+  #fxPage { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; transition: opacity 1.5s; }
+  /* festive touches across the menu (only when a festival theme is on) */
+  body[data-theme] .section h2 { display: flex; align-items: center; gap: 8px; }
+  body[data-theme] .section h2::before { content: ''; width: 22px; height: 22px; flex: none; background: var(--motif) center/contain no-repeat; }
+  body[data-theme] .tab.active { background: var(--accent); color: #fff; }
+  body[data-theme] .cartbar { background: linear-gradient(100deg, var(--accent-ink), var(--accent)); }
+  body[data-theme] .footer-space::before { content: var(--greet); display: block; font-weight: 800; color: var(--accent-ink); margin-bottom: 4px; }
+  body[data-theme] .success .tick { background: var(--accent); }
+  #fxPage.top { z-index: 65; }
+  @media (prefers-reduced-motion: reduce) { .fest .ic { animation: none !important; } }
   .rtag { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; margin-left: 6px; vertical-align: 2px; background: #fff1e0; color: #a45200; }
   .rtag.ack { background: #e6f4ea; color: #1e7a3c; }
   .rm-line .again { color: var(--accent-ink); font-weight: 600; }
@@ -274,7 +297,7 @@ const T = {
     unavailErr: 'Sorry, some items are no longer available. Please review your order.', tooMany: 'Sorry, we could not send this right now. Please ask our staff for help.',
     addNote: 'Note', language: 'Language', edit: 'Update order',
     noticeTxt: 'Order from your phone · pay at the counter', confirmClear: 'Remove all items from your cart?', dineIn: 'Dine in', takeaway: 'Take away', howServe: 'Dine in or take away?',
-    cancelled: 'Cancelled', tabMine: 'My orders', tabTable: 'Whole table', stNew: 'Received', stDone: 'Confirmed', tableTotal: 'Table total',
+    voidNote: 'This order has been cancelled by our staff (wrong or duplicate order). It is not included in your bill.', cancelled: 'Cancelled', tabMine: 'My orders', tabTable: 'Whole table', stNew: 'Received', stDone: 'Confirmed', tableTotal: 'Table total',
     tableNote: 'Everything ordered at your table during this visit', closedT: 'Thank you for dining with us!', closedS: 'We hope to see you again soon. If you would like to order more, please scan the QR code on your table.',
     viewOrdersBtn: 'View orders', onlyLeft: 'Only {n} left', inCarts: '{n} in other guests\' carts', heldOut: 'Last portions in other guests\' carts', maxLeft: 'Sorry, only {n} left for this dish.', stockErr: 'Sorry, only {n} portion(s) of {x} are available now. We have updated your cart.', reminded: 'Reminder sent', acked: 'Staff is on it', againIn: 'You can remind again in {m} min', cooldown: 'We received your reminder a moment ago. Thank you for your patience!', callStaff: 'Call a staff member', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
     callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Remind staff: a dish has not arrived yet', callDone: 'Staff notified, coming shortly', remindTitle: 'Which dishes have not arrived yet?',
@@ -293,7 +316,7 @@ const T = {
     unavailErr: 'Maaf, sesetengah item tidak lagi tersedia. Sila semak semula pesanan anda.', tooMany: 'Maaf, permintaan tidak dapat dihantar sekarang. Sila minta bantuan kakitangan kami.',
     addNote: 'Nota', language: 'Bahasa', edit: 'Kemas kini',
     noticeTxt: 'Pesan melalui telefon · bayar di kaunter', confirmClear: 'Buang semua item dari troli?', dineIn: 'Makan sini', takeaway: 'Bungkus', howServe: 'Makan sini atau bungkus?',
-    cancelled: 'Dibatalkan', tabMine: 'Pesanan saya', tabTable: 'Seluruh meja', stNew: 'Diterima', stDone: 'Disahkan', tableTotal: 'Jumlah meja',
+    voidNote: 'Pesanan ini telah dibatalkan oleh staf kami (pesanan salah atau berulang). Ia tidak termasuk dalam bil anda.', cancelled: 'Dibatalkan', tabMine: 'Pesanan saya', tabTable: 'Seluruh meja', stNew: 'Diterima', stDone: 'Disahkan', tableTotal: 'Jumlah meja',
     tableNote: 'Semua pesanan meja anda sepanjang kunjungan ini', closedT: 'Terima kasih kerana menjamu selera bersama kami!', closedS: 'Kami harap dapat berjumpa lagi. Jika ingin memesan lagi, sila imbas kod QR di meja anda.',
     viewOrdersBtn: 'Lihat pesanan', onlyLeft: 'Tinggal {n} sahaja', inCarts: '{n} dalam troli pelanggan lain', heldOut: 'Bahagian terakhir dalam troli pelanggan lain', maxLeft: 'Maaf, hanya tinggal {n} untuk hidangan ini.', stockErr: 'Maaf, hanya {n} bahagian {x} yang tersedia sekarang. Troli anda telah dikemas kini.', reminded: 'Peringatan dihantar', acked: 'Kakitangan sedang uruskan', againIn: 'Boleh ingatkan semula dalam {m} minit', cooldown: 'Kami baru sahaja menerima peringatan anda. Terima kasih atas kesabaran anda!', callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
     callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Ingatkan pelayan: hidangan belum sampai', callDone: 'Pelayan dimaklumkan, akan datang', remindTitle: 'Hidangan mana yang belum sampai?',
@@ -312,7 +335,7 @@ const T = {
     unavailErr: '抱歉，部分菜品暂时无法供应，请您再确认一下订单。', tooMany: '抱歉，暂时无法送出，请联系店员协助。',
     addNote: '备注', language: '语言', edit: '更新订单',
     noticeTxt: '手机点餐 · 柜台付款', confirmClear: '确定要移除购物车里的全部菜品吗？', dineIn: '堂食', takeaway: '外带', howServe: '请问堂食还是外带？',
-    cancelled: '已取消', tabMine: '我的订单', tabTable: '本桌订单', stNew: '已收到', stDone: '已确认', tableTotal: '本桌合计',
+    voidNote: '此单已由员工取消（错误单或重复下单），不计入您的账单。', cancelled: '已取消', tabMine: '我的订单', tabTable: '本桌订单', stNew: '已收到', stDone: '已确认', tableTotal: '本桌合计',
     tableNote: '本桌这次用餐的所有订单', closedT: '谢谢光临，欢迎再来！', closedS: '期待再次为您服务。如需再点餐，请重新扫描桌上的二维码。',
     viewOrdersBtn: '查看订单', onlyLeft: '仅剩 {n} 份', inCarts: '{n} 份在其他客人的购物车中', heldOut: '最后几份已在其他客人的购物车中', maxLeft: '抱歉，这道菜只剩 {n} 份了。', stockErr: '抱歉，{x} 目前只剩 {n} 份，已为您更新购物车。', reminded: '已提醒', acked: '员工已确认', againIn: '{m} 分钟后可再次提醒', cooldown: '我们刚收到您的提醒，感谢您的耐心等候！', callStaff: '请服务员过来', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
     callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '提醒服务员：还有菜未上桌', callDone: '已通知服务员，马上过来', remindTitle: '请问哪些菜还没上桌？',
@@ -362,7 +385,8 @@ let clientId = store.get('clientId', null);
 if (!clientId) { clientId = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)); store.set('clientId', clientId); }
 let cartKey = 'cart:' + (seat ? seat.key : '');
 let cart = seat ? store.get(cartKey, []) : []; // [{key, itemId, qty, options:{gid:[cid]}, note}]
-let menu = [], itemsById = new Map(), table = null, config = { name: '' }, seatClosed = false, busy = { level: 0, extra: 0 }, skew = 0, orderCount = 0, theme = 'default';
+let menu = [], itemsById = new Map(), table = null, config = { name: '' }, seatClosed = false, busy = { level: 0, extra: 0 }, skew = 0, orderCount = 0, allCount = 0, theme = 'default';
+const themeSig = (r) => [r.theme, r.banner, r.effects].join('|');
 let detail = null; // {item, qty, options, note, editKey}
 
 async function api(path, opts) {
@@ -381,7 +405,7 @@ function renderPage() {
   const sections = menu.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2>${esc(L(c.name))}</h2>${c.items.map(itemRow).join('')}</section>`).join('');
   $('app').innerHTML = `
     <header class="hero">
-      <div id="festBar">${festHTML()}</div>
+      <div id="festBar"></div>
       <div class="hero-top">
         <div class="brand"><div class="logo">${esc(initial)}</div>
           <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>
@@ -392,13 +416,14 @@ function renderPage() {
       <div class="notice">${ICON.counter.replace('<svg', '<svg width="16" height="16"')}<span>${esc(t('noticeTxt'))}</span></div>
       <div class="act-row">
         <button class="call-btn${callCooldown > Date.now() ? ' sent' : ''}" id="callBtn">${callCooldown > Date.now() ? ICON.check + esc(t('callDone')) : ICON.bell + esc(t('callStaff'))}</button>
-        <button class="orders-btn" id="histBtn" ${orderCount ? '' : 'disabled'}>${ICON.receipt}${esc(t('viewOrdersBtn'))}${orderCount ? `<b>${orderCount}</b>` : ''}</button>
+        <button class="orders-btn" id="histBtn" ${allCount ? '' : 'disabled'}>${ICON.receipt}${esc(t('viewOrdersBtn'))}${orderCount ? `<b>${orderCount}</b>` : ''}</button>
       </div>
       <div id="busyBar">${busyHTML()}</div>
     </header>
     <nav class="tabs"><div class="tabs-scroll" id="tabs">${tabs}</div></nav>
     <main>${sections}</main>
     <div class="footer-space">${esc(config.name)}</div>`;
+  applyTheme();
   $('histBtn').onclick = openHistory;
   $('callBtn').onclick = openCall;
   $('langBtn').onclick = (e) => { e.stopPropagation(); toggleLang(); };
@@ -634,7 +659,7 @@ async function placeOrder() {
     const res = await api('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seat: seat.key, clientId, lines: cart.map((l) => ({ itemId: l.itemId, qty: l.qty, options: l.options, note: l.note, takeaway: !!l.takeaway })) }) });
     const snapshot = cart.map((l) => ({ name: itemsById.get(l.itemId).name, qty: l.qty, opts: optText(itemsById.get(l.itemId), l.options), note: l.note, takeaway: !!l.takeaway, sum: lineUnit(l) * l.qty }));
-    cart = []; holdsSig = ''; saveCart(); orderCount++; renderOrdersBtn(); closeSheets(); showSuccess(res, snapshot);
+    cart = []; holdsSig = ''; saveCart(); orderCount++; allCount++; renderOrdersBtn(); closeSheets(); showSuccess(res, snapshot);
   } catch (e) {
     if (e.data?.error === 'SEAT_CLOSED') { closeSheets(); return showClosed(); }
     if (e.data?.error === 'STOCK') { toast(t('stockErr').replace('{n}', e.data.left).replace('{x}', L(e.data.itemName))); holdsSig = ''; await reloadMenu(); syncHolds(true); }
@@ -653,7 +678,7 @@ function showSuccess(res, snapshot) {
     <div class="pay-card">${ICON.counter}<span>${esc(t('enjoy'))}</span></div>
     <div class="receipt">${rows}<div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(res.total)}</span></div></div>
     <div class="success-actions"><button class="primary center" id="moreBtn">${esc(t('orderMore'))}</button><button class="ghost" id="seeBtn">${esc(t('viewOrders'))}</button></div>`;
-  $('success').classList.add('show'); document.body.classList.add('success-open'); lockScroll(); $('success').scrollTop = 0; renderCartBar();
+  $('success').classList.add('show'); document.body.classList.add('success-open'); fxShower(4500, true); lockScroll(); $('success').scrollTop = 0; renderCartBar();
   const hideSuccess = () => { $('success').classList.remove('show'); document.body.classList.remove('success-open'); unlockScroll(); renderCartBar(); };
   $('moreBtn').onclick = () => { hideSuccess(); window.scrollTo(0, 0); };
   $('seeBtn').onclick = () => { hideSuccess(); openHistory(); };
@@ -681,6 +706,7 @@ function drawHistory() {
     const mine = histOrders.filter((o) => o.mine);
     body.innerHTML = mine.length ? cta + mine.map((o) => `
       <div class="hist${o.status === 'void' ? ' void' : ''}"><div class="hist-head"><b>${esc(t('orderNo'))} #${o.seq}${statusChip(o)}</b><span>${fmtTime(o.createdAt)}</span></div>
+        ${o.status === 'void' ? `<p class="void-note">${esc(t('voidNote'))}</p>` : ''}
         ${o.lines.map((l, i) => lineRow(l, l.unit * l.qty, o.status === 'void' ? '' : remTag(o.id, i))).join('')}
         <div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(o.total)}</span></div></div>`).join('') + '<div style="height:16px"></div>'
       : emptyHTML(t('noOrders'));
@@ -726,7 +752,7 @@ async function openCall() {
 }
 function renderOrdersBtn() {
   const b = $('histBtn'); if (!b) return;
-  b.disabled = !orderCount; b.innerHTML = ICON.receipt + esc(t('viewOrdersBtn')) + (orderCount ? `<b>${orderCount}</b>` : '');
+  b.disabled = !allCount; b.innerHTML = ICON.receipt + esc(t('viewOrdersBtn')) + (orderCount ? `<b>${orderCount}</b>` : '');
 }
 function renderCallBtn() {
   const b = $('callBtn'); if (!b) return; const on = callCooldown > Date.now();
@@ -773,21 +799,81 @@ const FEST_ICON = {
   christmas: '<svg viewBox="0 0 32 32"><path d="M16 2l2 4h-4z" fill="#ffd166"/><path d="M16 5l7 9h-4l6 8h-5l5 6H7l5-6H7l6-8H9z" fill="currentColor"/><rect x="14" y="28" width="4" height="3" fill="#8b5a2b"/><circle cx="13" cy="17" r="1.3" fill="#ffd166"/><circle cx="19" cy="21" r="1.3" fill="#ff6b6b"/><circle cx="15" cy="24" r="1.3" fill="#ffd166"/></svg>',
 };
 const FEST_TEXT = {
-  cny: { en: 'Happy Chinese New Year! Gong Xi Fa Cai', ms: 'Selamat Tahun Baru Cina! Gong Xi Fa Cai', zh: '新春快乐，恭喜发财！' },
-  merdeka: { en: 'Happy Merdeka & Malaysia Day!', ms: 'Selamat Hari Merdeka & Hari Malaysia!', zh: '国庆日暨马来西亚日快乐！' },
-  raya: { en: 'Selamat Hari Raya! Wishing you joy and blessings', ms: 'Selamat Hari Raya, Maaf Zahir & Batin', zh: '开斋节快乐！' },
-  deepavali: { en: 'Happy Deepavali! May your days be bright', ms: 'Selamat Hari Deepavali!', zh: '屠妖节快乐！' },
-  gawai: { en: 'Happy Gawai! Gayu Guru Gerai Nyamai', ms: 'Selamat Hari Gawai! Gayu Guru Gerai Nyamai', zh: '丰收节快乐！Gayu Guru Gerai Nyamai' },
-  christmas: { en: 'Merry Christmas & Happy Holidays!', ms: 'Selamat Hari Krismas!', zh: '圣诞快乐，节日愉快！' },
+  cny: { en: 'Happy Chinese New Year!', ms: 'Selamat Tahun Baru Cina!', zh: '新春快乐，万事如意！' },
+  merdeka: { en: 'Happy Merdeka & Malaysia Day!', ms: 'Selamat Hari Merdeka!', zh: '国庆日快乐！' },
+  raya: { en: 'Selamat Hari Raya!', ms: 'Selamat Hari Raya Aidilfitri!', zh: '开斋节快乐！' },
+  deepavali: { en: 'Happy Deepavali!', ms: 'Selamat Hari Deepavali!', zh: '屠妖节快乐！' },
+  gawai: { en: 'Happy Gawai!', ms: 'Selamat Hari Gawai!', zh: '丰收节快乐！' },
+  christmas: { en: 'Merry Christmas!', ms: 'Selamat Hari Krismas!', zh: '圣诞快乐，节日愉快！' },
 };
+const FEST_SUB = { cny: 'GONG XI FA CAI · 恭喜发财', merdeka: 'MERDEKA · MALAYSIA DAY', raya: 'MAAF ZAHIR & BATIN', deepavali: 'FESTIVAL OF LIGHTS', gawai: 'GAYU GURU GERAI NYAMAI', christmas: 'SEASON’S GREETINGS' };
+let banner = null, effects = true;
 function festHTML() {
+  if (banner) return `<div class="fest-img"><img src="${esc(banner)}" alt=""><canvas></canvas></div>`;
   if (!FEST_TEXT[theme]) return '';
   const ic = FEST_ICON[theme];
-  return `<div class="fest ${theme}">${ic}<span>${esc(FEST_TEXT[theme][lang] || FEST_TEXT[theme].en)}</span>${ic}</div>`;
+  return `<div class="fest ${theme}"><span class="ic l">${ic}</span><span class="txt"><span class="g1">${esc(FEST_TEXT[theme][lang] || FEST_TEXT[theme].en)}</span><span class="g2">${esc(FEST_SUB[theme])}</span></span><span class="ic r">${ic}</span><canvas></canvas></div>`;
 }
+const MOTIF_COLOR = { cny: '#d62828', merdeka: '#0b2a7a', raya: '#13804a', deepavali: '#c2410c', gawai: '#a45a13', christmas: '#11603a' };
 function applyTheme() {
-  if (FEST_TEXT[theme]) document.body.dataset.theme = theme; else delete document.body.dataset.theme;
+  if (FEST_TEXT[theme]) {
+    document.body.dataset.theme = theme;
+    const svg = FEST_ICON[theme].replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"').replace(/currentColor/g, MOTIF_COLOR[theme]).replace(/#b3121b|#0b5a33/g, '#fff');
+    document.body.style.setProperty('--motif', `url("data:image/svg+xml,${encodeURIComponent(svg)}")`);
+    document.body.style.setProperty('--greet', JSON.stringify(FEST_TEXT[theme][lang] || FEST_TEXT[theme].en));
+  } else delete document.body.dataset.theme;
   const el = $('festBar'); if (el) el.innerHTML = festHTML();
+  startFx();
+}
+
+// ---------------- festive particle effects (snow, confetti, petals…) ----------------
+// A small canvas animation inside the banner, plus a short full-screen shower when the page opens.
+const FX = {
+  christmas: { n: 34, make: (w, h) => ({ x: Math.random() * w, y: -10, r: 1.4 + Math.random() * 2.6, vy: .35 + Math.random() * .8, a: Math.random() * 6, c: '#fff', soft: true }), draw: dot },
+  cny: { n: 26, make: (w) => { const gold = Math.random() < .4; return { x: Math.random() * w, y: -10, r: gold ? 2.2 : 4 + Math.random() * 3, vy: .5 + Math.random() * .8, a: Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .06, c: gold ? '#ffd24a' : ['#ff6b6b', '#ff9aa2', '#e63946'][Math.floor(Math.random() * 3)], petal: !gold }; }, draw: (g, p) => p.petal ? petal(g, p) : dot(g, p) },
+  merdeka: { n: 34, make: (w) => ({ x: Math.random() * w, y: -10, r: 3 + Math.random() * 3, vy: .8 + Math.random() * 1.1, a: Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .2, c: ['#c8102e', '#0b2a7a', '#ffd400', '#ffffff'][Math.floor(Math.random() * 4)] }), draw: confetti },
+  raya: { n: 22, make: (w) => ({ x: Math.random() * w, y: -10, r: 2.5 + Math.random() * 3, vy: .3 + Math.random() * .6, a: Math.random() * 6, rot: Math.random() * 6, vr: .01, c: '#ffd86b' }), draw: star },
+  deepavali: { n: 30, up: true, make: (w, h) => ({ x: Math.random() * w, y: h + 10, r: 1.2 + Math.random() * 2.2, vy: -(.4 + Math.random() * .9), a: Math.random() * 6, c: ['#ffd166', '#ff9f1c', '#ffe8a3'][Math.floor(Math.random() * 3)], glow: true }), draw: dot },
+  gawai: { n: 24, make: (w) => ({ x: Math.random() * w, y: -10, r: 2.5 + Math.random() * 2, vy: .5 + Math.random() * .7, a: Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .08, c: ['#ffd36e', '#e9b44c', '#a3c45a'][Math.floor(Math.random() * 3)], petal: true }), draw: petal },
+};
+function dot(g, p) { if (p.glow) { g.shadowColor = p.c; g.shadowBlur = 8; } else if (p.soft) { g.shadowColor = 'rgba(30,70,110,.5)'; g.shadowBlur = 4; } g.fillStyle = p.c; g.globalAlpha = p.alpha ?? .9; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); g.shadowBlur = 0; }
+function petal(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.c; g.globalAlpha = .9; g.beginPath(); g.ellipse(0, 0, p.r, p.r * .55, 0, 0, 7); g.fill(); g.restore(); }
+function confetti(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.scale(1, Math.cos(p.a * 2)); g.fillStyle = p.c; g.globalAlpha = .95; g.fillRect(-p.r, -p.r * .45, p.r * 2, p.r * .9); g.restore(); }
+function star(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.c; g.globalAlpha = .55 + .45 * Math.abs(Math.sin(p.a * 2)); g.beginPath();
+  for (let i = 0; i < 10; i++) { const r = i % 2 ? p.r * .45 : p.r; g.lineTo(Math.cos(i * Math.PI / 5 - Math.PI / 2) * r, Math.sin(i * Math.PI / 5 - Math.PI / 2) * r); } g.fill(); g.restore(); }
+let fxRuns = [];
+function fxRun(cv, kind, { scale = 1, until = Infinity, banner = false } = {}) {
+  const k = FX[kind]; if (!k || !cv) return; const g = cv.getContext('2d'); const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let w = 0, h = 0; const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); }; size();
+  const n = Math.round(k.n * scale); const ps = Array.from({ length: n }, () => { const p = k.make(w, h); p.y = Math.random() * h; return p; });
+  const run = { stop: false }; if (banner) fxRuns.push(run); const t0 = performance.now();
+  const tick = (now) => {
+    if (run.stop || !cv.isConnected) return;
+    if (cv.clientWidth !== w || cv.clientHeight !== h) size();
+    g.clearRect(0, 0, w, h); const ending = now - t0 > until;
+    for (const p of ps) {
+      p.a += .02; p.y += p.vy; p.x += Math.sin(p.a) * .45; if (p.vr) p.rot += p.vr;
+      const out = k.up ? p.y < -12 : p.y > h + 12;
+      if (out) { if (ending) { p.dead = true; continue; } Object.assign(p, k.make(w, h)); }
+      if (!p.dead) k.draw(g, p);
+    }
+    g.globalAlpha = 1;
+    if (ending && ps.every((p) => p.dead)) { cv.remove(); return; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+let fxPageShown = false;
+function startFx() {
+  fxRuns.forEach((r) => r.stop = true); fxRuns = [];
+  if (!effects || !FX[theme] || matchMedia('(prefers-reduced-motion: reduce)').matches) { document.getElementById('fxPage')?.remove(); return; }
+  const cv = document.querySelector('#festBar canvas'); if (cv) fxRun(cv, theme, { scale: .5, banner: true });
+  if (!fxPageShown) { fxPageShown = true; fxShower(7000); } // a gentle shower over the whole page for the first few seconds only, so the menu stays easy to read
+}
+function fxShower(ms, onTop) {
+  if (!effects || !FX[theme] || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.getElementById('fxPage')?.remove();
+  const pc = document.createElement('canvas'); pc.id = 'fxPage'; if (onTop) pc.className = 'top'; document.body.appendChild(pc); fxRun(pc, theme, { scale: 1, until: ms });
 }
 
 // ---------------- kitchen busy notice ----------------
@@ -799,8 +885,8 @@ async function checkSeat() {
   if (!seat || seatClosed) return;
   try { const r = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); skew = r.now - Date.now();
     if (r.busy.level !== busy.level || r.busy.extra !== busy.extra) { busy = r.busy; if ($('busyBar')) $('busyBar').innerHTML = busyHTML(); }
-    if (r.orderCount !== orderCount) { orderCount = r.orderCount; renderOrdersBtn(); }
-    if (r.theme !== theme) { theme = r.theme; applyTheme(); }
+    if (r.orderCount !== orderCount || r.allCount !== allCount) { orderCount = r.orderCount; allCount = r.allCount; renderOrdersBtn(); }
+    if (themeSig(r) !== themeSig({ theme, banner, effects })) { theme = r.theme; banner = r.banner; effects = r.effects; applyTheme(); }
     applyAvail(r.avail);
     return true;
   } catch (e) { if (e.status === 410) { showClosed(); return false; } }
@@ -850,7 +936,7 @@ document.addEventListener('visibilitychange', async () => {
     } else if (!seat) return showClosed();
 
     table = { name: seat.table };
-    const st = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); busy = st.busy; skew = st.now - Date.now(); orderCount = st.orderCount; theme = st.theme; applyTheme();
+    const st = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); busy = st.busy; skew = st.now - Date.now(); orderCount = st.orderCount; allCount = st.allCount; theme = st.theme; banner = st.banner; effects = st.effects;
     cartKey = 'cart:' + seat.key; cart = store.get(cartKey, []);
   } catch (e) { if (e.status === 404) return fatal(); if (e.status === 410) return showClosed(); $('app').innerHTML = `<div class="fatal"><h2>${esc(t('netErr'))}</h2><button class="primary center" style="max-width:240px;margin:20px auto" onclick="location.reload()">↻</button></div>`; return; }
   await reloadMenu(); renderPage();

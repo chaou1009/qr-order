@@ -59,8 +59,9 @@
   .tok { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); }
   .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
   .theme { border: 2px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); text-align: left; padding: 0; }
+  .theme .sw { background-size: cover; }
   .theme.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-  .theme .sw { height: 64px; display: grid; place-items: center; color: #fff; font-weight: 800; padding: 6px 10px; text-align: center; font-size: 13px; }
+  .theme .sw { height: 74px; display: grid; place-items: center; color: #fff; font-weight: 800; padding: 6px 10px; text-align: center; font-size: 13px; }
   .theme .tn { padding: 10px 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
   .theme .when { display: block; padding: 0 12px 12px; font-size: 12px; color: var(--muted); }
 
@@ -101,7 +102,7 @@
 <script>
 'use strict';
 const A = {
-  zh: { title: '管理后台', dishes: '菜品', cats: '分类', tables: '桌台', theme: '节日主题', toStaff: '返回接单', login: '管理后台登录', loginSub: '请输入管理密码', enter: '登录', badPin: '密码不正确，请再试一次', tooMany: '尝试次数较多，请稍后再试',
+  zh: { noLimit: '不限', fx: '节日动态特效（雪花、彩纸、花瓣等）', fxHint: '横幅内一直有轻微飘落效果；顾客打开点单页和下单成功时整页飘几秒。', uploadBanner: '上传自己的横幅', removeBanner: '改回默认横幅', bannerHint: '建议尺寸 1200 × 400 像素（3:1）。上传后，这个主题会改用您的图片作为横幅。', customBanner: '自定义横幅', title: '管理后台', dishes: '菜品', cats: '分类', tables: '桌台', theme: '节日主题', toStaff: '返回接单', login: '管理后台登录', loginSub: '请输入管理密码', enter: '登录', badPin: '密码不正确，请再试一次', tooMany: '尝试次数较多，请稍后再试',
     addDish: '新增菜品', edit: '编辑', price: '价格 RM', stock: '剩余份数', stockPh: '不限', listed: '上架', onSale: '在售', soldToday: '今日售罄', soldUntil: '售罄至重新开启', unlisted: '已下架',
     soldTodayTag: '今日售罄（明天自动恢复）', soldUntilTag: '售罄（需手动开启）', stockOut: '限量已卖完', left: '剩 {n} 份', held: '{n} 份在顾客购物车中', cook: '烹制 {m} 分钟', noImg: '无图片',
     dishesHint: '改价格、剩余份数后按回车或点别处即保存。剩余份数留空 = 不限量；填数字后顾客会看到“仅剩 N 份”，卖完自动显示售罄。', saved: '已保存', err: '保存失败，请再试一次',
@@ -114,7 +115,7 @@ const A = {
     themeHint: '选择后顾客点单页立即换上节日配色和祝福横幅（约 3 秒内生效）。节日过后记得切回“默认”。', current: '使用中',
     th_default: '默认', th_cny: '农历新年', th_merdeka: '国庆日 / 马来西亚日', th_raya: '开斋节', th_deepavali: '屠妖节', th_gawai: '丰收节 Gawai', th_christmas: '圣诞节',
     w_default: '平日使用', w_cny: '1–2 月', w_merdeka: '8 月 31 日 · 9 月 16 日', w_raya: '依伊斯兰历', w_deepavali: '10–11 月', w_gawai: '6 月 1–2 日', w_christmas: '12 月' },
-  en: { title: 'Back office', dishes: 'Dishes', cats: 'Categories', tables: 'Tables', theme: 'Festive theme', toStaff: 'Back to orders', login: 'Back office sign in', loginSub: 'Please enter the admin PIN', enter: 'Sign in', badPin: 'Incorrect PIN, please try again', tooMany: 'Too many attempts, please try again later',
+  en: { noLimit: 'No limit', fx: 'Festive animation (snow, confetti, petals…)', fxHint: 'A light animation stays in the banner; the whole page gets a short shower when guests open the menu and after ordering.', uploadBanner: 'Upload my own banner', removeBanner: 'Use built-in banner', bannerHint: 'Recommended size 1200 × 400 px (3:1). Once uploaded, this theme shows your picture as the banner.', customBanner: 'Custom banner', title: 'Back office', dishes: 'Dishes', cats: 'Categories', tables: 'Tables', theme: 'Festive theme', toStaff: 'Back to orders', login: 'Back office sign in', loginSub: 'Please enter the admin PIN', enter: 'Sign in', badPin: 'Incorrect PIN, please try again', tooMany: 'Too many attempts, please try again later',
     addDish: 'Add dish', edit: 'Edit', price: 'Price RM', stock: 'Portions left', stockPh: 'No limit', listed: 'Listed', onSale: 'On sale', soldToday: 'Sold out today', soldUntil: 'Sold out until re-enabled', unlisted: 'Hidden',
     soldTodayTag: 'Sold out today (back tomorrow)', soldUntilTag: 'Sold out (manual)', stockOut: 'Limited portions sold out', left: '{n} left', held: '{n} in guests\' carts', cook: 'Cook {m} min', noImg: 'No photo',
     dishesHint: 'Price and portions save when you press Enter or tap elsewhere. Leave portions empty for no limit; with a number, guests see "Only N left" and the dish shows sold out at 0.', saved: 'Saved', err: 'Could not save, please try again',
@@ -127,7 +128,7 @@ const A = {
     themeHint: 'The guest menu switches to the festive colours and greeting banner within about 3 seconds. Remember to switch back to Default afterwards.', current: 'In use',
     th_default: 'Default', th_cny: 'Chinese New Year', th_merdeka: 'Merdeka / Malaysia Day', th_raya: 'Hari Raya', th_deepavali: 'Deepavali', th_gawai: 'Gawai', th_christmas: 'Christmas',
     w_default: 'Everyday', w_cny: 'Jan – Feb', w_merdeka: '31 Aug · 16 Sep', w_raya: 'Islamic calendar', w_deepavali: 'Oct – Nov', w_gawai: '1–2 June', w_christmas: 'December' },
-  ms: { title: 'Pejabat belakang', dishes: 'Hidangan', cats: 'Kategori', tables: 'Meja', theme: 'Tema perayaan', toStaff: 'Kembali ke pesanan', login: 'Log masuk pentadbir', loginSub: 'Sila masukkan PIN pentadbir', enter: 'Log masuk', badPin: 'PIN tidak betul, sila cuba lagi', tooMany: 'Terlalu banyak cubaan, sila cuba sebentar lagi',
+  ms: { noLimit: 'Tiada had', fx: 'Animasi perayaan (salji, konfeti, kelopak…)', fxHint: 'Animasi ringan kekal dalam sepanduk; seluruh halaman dihujani seketika apabila pelanggan membuka menu dan selepas memesan.', uploadBanner: 'Muat naik sepanduk sendiri', removeBanner: 'Guna sepanduk asal', bannerHint: 'Saiz disyorkan 1200 × 400 px (3:1). Selepas dimuat naik, tema ini memaparkan gambar anda sebagai sepanduk.', customBanner: 'Sepanduk sendiri', title: 'Pejabat belakang', dishes: 'Hidangan', cats: 'Kategori', tables: 'Meja', theme: 'Tema perayaan', toStaff: 'Kembali ke pesanan', login: 'Log masuk pentadbir', loginSub: 'Sila masukkan PIN pentadbir', enter: 'Log masuk', badPin: 'PIN tidak betul, sila cuba lagi', tooMany: 'Terlalu banyak cubaan, sila cuba sebentar lagi',
     addDish: 'Tambah hidangan', edit: 'Ubah', price: 'Harga RM', stock: 'Baki hidangan', stockPh: 'Tiada had', listed: 'Dipaparkan', onSale: 'Dijual', soldToday: 'Habis hari ini', soldUntil: 'Habis sehingga dibuka', unlisted: 'Disembunyikan',
     soldTodayTag: 'Habis hari ini (esok dibuka semula)', soldUntilTag: 'Habis (manual)', stockOut: 'Had hidangan sudah habis', left: 'Tinggal {n}', held: '{n} dalam troli pelanggan', cook: 'Masak {m} min', noImg: 'Tiada gambar',
     dishesHint: 'Harga dan baki disimpan apabila tekan Enter atau ketik di tempat lain. Kosongkan baki untuk tiada had; jika ada nombor, pelanggan nampak "Tinggal N" dan hidangan habis pada 0.', saved: 'Disimpan', err: 'Gagal disimpan, sila cuba lagi',
@@ -162,7 +163,7 @@ async function api(url, opt = {}) {
   return data;
 }
 
-let view = store.get('adminView', 'dishes'), menu = [], tables = [], theme = 'default', themes = [];
+let view = store.get('adminView', 'dishes'), menu = [], tables = [], theme = 'default', themes = [], banners = {}, effects = true;
 const VIEWS = ['dishes', 'cats', 'tables', 'theme'];
 function labels() {
   document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
@@ -188,7 +189,7 @@ async function load() {
   try {
     if (view === 'dishes' || view === 'cats') menu = (await api('/api/admin/menu')).categories;
     if (view === 'tables') tables = (await api('/api/admin/tables')).tables;
-    if (view === 'theme') ({ theme, themes } = await api('/api/admin/theme'));
+    if (view === 'theme') ({ theme, themes, banners, effects } = await api('/api/admin/theme'));
     draw();
   } catch (e) { if (e.status !== 401) toast(tr('err')); }
 }
@@ -217,6 +218,7 @@ function dishRow(d) {
         <span class="chips" data-q="soldOut"><button data-m="none" class="${so === 'none' ? 'on' : ''}">${esc(tr('onSale'))}</button><button data-m="today" class="${so === 'today' ? 'on amber' : ''}">${esc(tr('soldToday'))}</button><button data-m="until" class="${so === 'until' ? 'on red' : ''}">${esc(tr('soldUntil'))}</button></span>
         <label class="field">${esc(tr('price'))}<input type="number" step="0.10" min="0" inputmode="decimal" data-q="price" value="${rm(d.price)}"></label>
         <label class="field">${esc(tr('stock'))}<input type="number" min="0" step="1" inputmode="numeric" data-q="stock" placeholder="${esc(tr('stockPh'))}" value="${d.stock ?? ''}"></label>
+        ${d.stock != null ? `<button class="btn small" data-nolimit>${esc(tr('noLimit'))}</button>` : ''}
         ${d.held ? `<span class="held">${esc(tr('held', { n: d.held }))}</span>` : ''}
         <span style="flex:1"></span><button class="btn small" data-edit>${esc(tr('edit'))}</button>
       </div></div></div>`;
@@ -240,6 +242,7 @@ function drawDishesBind() {
     el.querySelectorAll('[data-q=soldOut] button').forEach((b) => b.onclick = () => quick({ soldOut: b.dataset.m }));
     const pr = el.querySelector('[data-q=price]'); pr.onchange = () => quick({ price: pr.value });
     const st = el.querySelector('[data-q=stock]'); st.onchange = () => quick({ stock: st.value === '' ? null : Number(st.value) });
+    const nl = el.querySelector('[data-nolimit]'); if (nl) nl.onclick = () => quick({ stock: null });
     [pr, st].forEach((i) => i.onkeydown = (e) => { if (e.key === 'Enter') i.blur(); });
     el.querySelector('[data-edit]').onclick = () => openDish(d);
   });
@@ -324,10 +327,10 @@ function bindEditor() {
   };
 }
 // Resize the photo in the browser (max 1000px, JPEG) so uploads stay small even from a phone camera.
-function shrink(file) {
+function shrink(file, max = 1000) {
   return new Promise((resolve, reject) => {
     const img = new Image(); const url = URL.createObjectURL(file);
-    img.onload = () => { const k = Math.min(1, 1000 / Math.max(img.width, img.height)); const c = document.createElement('canvas');
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas');
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
       g.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', 0.82)); };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img')); }; img.src = url;
@@ -370,14 +373,39 @@ function drawTables() {
 
 // ---------------- festive theme ----------------
 function drawTheme() {
-  $('main').innerHTML = `<div class="bar"><h2>${esc(tr('theme'))}</h2></div><p class="hint">${esc(tr('themeHint'))}</p><div class="themes">${themes.map((k) => `
-    <button class="theme${k === theme ? ' on' : ''}" data-t="${k}"><div class="sw" style="background:${THEME_LOOK[k]}">${esc(THEME_GREET[k])}</div>
-      <div class="tn"><span>${esc(tr('th_' + k))}</span>${k === theme ? `<span class="tag amber">${esc(tr('current'))}</span>` : ''}</div><span class="when">${esc(tr('w_' + k))}</span></button>`).join('')}</div>`;
-  $('main').querySelectorAll('[data-t]').forEach((b) => b.onclick = async () => {
-    try { ({ theme } = await api('/api/admin/theme', { method: 'POST', body: { theme: b.dataset.t } })); toast(tr('saved')); drawTheme(); } catch (e) { if (e.status !== 401) toast(tr('err')); }
+  $('main').innerHTML = `<div class="bar"><h2>${esc(tr('theme'))}</h2></div><p class="hint">${esc(tr('themeHint'))}</p>
+    <div class="row" style="margin-bottom:14px"><label class="switch"><input type="checkbox" id="fxOn" ${effects ? 'checked' : ''}><span></span></label><div class="grow"><b>${esc(tr('fx'))}</b><div class="hint" style="margin:2px 0 0">${esc(tr('fxHint'))}</div></div></div>
+    <p class="hint">${esc(tr('bannerHint'))}</p>
+    <div class="themes">${themes.map((k) => `
+    <div class="theme${k === theme ? ' on' : ''}"><button class="pick" data-t="${k}" style="all:unset;display:block;width:100%;cursor:pointer">
+      ${banners[k] ? `<div class="sw" style="background:#000 url('${esc(banners[k])}') center/cover"></div>` : `<div class="sw" style="background:${THEME_LOOK[k]}">${esc(THEME_GREET[k])}</div>`}
+      <div class="tn"><span>${esc(tr('th_' + k))}</span>${k === theme ? `<span class="tag amber">${esc(tr('current'))}</span>` : ''}</div><span class="when">${esc(tr('w_' + k))}${banners[k] ? ' · ' + esc(tr('customBanner')) : ''}</span></button>
+      <div style="padding:0 12px 12px;display:flex;gap:6px;flex-wrap:wrap"><label class="btn small">${esc(tr('uploadBanner'))}<input type="file" accept="image/*" data-up="${k}" hidden></label>${banners[k] ? `<button class="btn small" data-rm="${k}">${esc(tr('removeBanner'))}</button>` : ''}</div></div>`).join('')}</div>`;
+  const post = async (body) => { try { ({ theme, banners, effects } = await api('/api/admin/theme', { method: 'POST', body })); toast(tr('saved')); drawTheme(); } catch (e) { if (e.status !== 401) toast(tr('err')); } };
+  $('fxOn').onchange = (e) => post({ effects: e.target.checked });
+  $('main').querySelectorAll('[data-t]').forEach((b) => b.onclick = () => post({ theme: b.dataset.t }));
+  $('main').querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => post({ banner: { theme: b.dataset.rm, url: null } }));
+  $('main').querySelectorAll('[data-up]').forEach((i) => i.onchange = async () => {
+    const f = i.files[0]; if (!f) return; toast(tr('uploading'));
+    try { const r = await api('/api/admin/upload', { method: 'POST', body: { dataUrl: await shrink(f, 1600) } }); await post({ banner: { theme: i.dataset.up, url: r.url } }); }
+    catch (e) { if (e.status !== 401) toast(tr('err')); }
   });
 }
 
+// Keep the dish list live (portions left, sold out after orders) without disturbing what staff are typing.
+const sig = (d) => JSON.stringify(d);
+setInterval(async () => {
+  if ($('top').hidden || view !== 'dishes' || document.hidden || $('modal').classList.contains('show')) return;
+  let fresh; try { fresh = (await api('/api/admin/menu')).categories; } catch { return; }
+  const oldIds = menu.map((c) => c.id + ':' + c.items.map((i) => i.id).join(',')).join('|'), newIds = fresh.map((c) => c.id + ':' + c.items.map((i) => i.id).join(',')).join('|');
+  if (oldIds !== newIds) { if (!document.activeElement?.closest('.dish')) { menu = fresh; drawDishes(); } return; }
+  fresh.forEach((c, ci) => c.items.forEach((it, ii) => {
+    const cur = menu[ci].items[ii]; if (sig(cur) === sig(it)) return;
+    const el = document.querySelector(`.dish[data-id="${it.id}"]`); if (!el || el.contains(document.activeElement)) return;
+    menu[ci].items[ii] = it; const w = document.createElement('div'); w.innerHTML = dishRow(it); el.replaceWith(w.firstElementChild);
+  }));
+  drawDishesBind();
+}, 4000);
 $('modal').onclick = (e) => { if (e.target === $('modal')) $('modal').classList.remove('show'); };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('modal').classList.remove('show'); });
 async function start() { $('top').hidden = false; if (!VIEWS.includes(view)) view = 'dishes'; labels(); await load(); }
