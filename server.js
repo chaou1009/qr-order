@@ -154,7 +154,7 @@ function priceLine(line, itemsById) {
     }
   }
   const note = String(line.note || '').trim().slice(0, 120);
-  return { itemId: it.id, name: parseJSON(it.name, {}), qty, unit, options: picked, note };
+  return { itemId: it.id, name: parseJSON(it.name, {}), qty, unit, options: picked, note, takeaway: line.takeaway === true };
 }
 
 // ---------- static files ----------
@@ -217,9 +217,9 @@ async function handle(req, res) {
   if (p === '/api/my-orders' && req.method === 'GET') {
     const clientId = url.searchParams.get('clientId') || '';
     if (!/^[\w-]{10,64}$/.test(clientId)) return send(res, 200, { orders: [] });
-    const rows = db.prepare('SELECT id, seq, table_name, items, total, created_at FROM orders WHERE client_id = ? AND created_at > ? ORDER BY id DESC LIMIT 30')
+    const rows = db.prepare('SELECT id, seq, table_name, items, total, status, created_at FROM orders WHERE client_id = ? AND created_at > ? ORDER BY id DESC LIMIT 30')
       .all(clientId, Date.now() - 24 * 3600e3);
-    return send(res, 200, { orders: rows.map((o) => ({ id: o.id, seq: o.seq, table: o.table_name, lines: parseJSON(o.items, []), total: o.total, createdAt: o.created_at })) });
+    return send(res, 200, { orders: rows.map((o) => ({ id: o.id, seq: o.seq, table: o.table_name, lines: parseJSON(o.items, []), total: o.total, status: o.status, createdAt: o.created_at })) });
   }
 
   // ----- staff API -----
@@ -245,9 +245,9 @@ async function handle(req, res) {
       return send(res, 200, { day, orders: rows.map(mapOrder) });
     }
     let m;
-    if ((m = /^\/api\/staff\/orders\/(\d+)\/(done|undo)$/.exec(p)) && req.method === 'POST') {
-      const done = m[2] === 'done';
-      db.prepare('UPDATE orders SET status = ?, done_at = ? WHERE id = ?').run(done ? 'done' : 'new', done ? Date.now() : null, Number(m[1]));
+    if ((m = /^\/api\/staff\/orders\/(\d+)\/(done|undo|void)$/.exec(p)) && req.method === 'POST') {
+      const status = { done: 'done', undo: 'new', void: 'void' }[m[2]];
+      db.prepare('UPDATE orders SET status = ?, done_at = ? WHERE id = ?').run(status, status === 'new' ? null : Date.now(), Number(m[1]));
       return send(res, 200, { ok: true });
     }
     if (p === '/api/staff/tables' && req.method === 'GET') {
