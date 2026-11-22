@@ -352,7 +352,7 @@ async function handle(req, res) {
       .run(seat.sess.id, seat.table.id, seat.table.name, type, JSON.stringify(detail), Date.now());
     return send(res, 201, { ok: true });
   }
-  if (p === '/api/config' && req.method === 'GET') return send(res, 200, { name: RESTAURANT_NAME, publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO, ...themeInfo() });
+  if (p === '/api/config' && req.method === 'GET') return send(res, 200, { ...shopInfo(), publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO, ...themeInfo() });
   if (DEMO && req.method === 'GET' && p === '/demo') return serveFile(res, path.join(PUBLIC_DIR, 'demo.html'));
   if (DEMO && req.method === 'GET' && p === '/api/demo') {
     return send(res, 200, { tables: db.prepare('SELECT name, token FROM tables WHERE active = 1 ORDER BY sort, id').all(), pin: STAFF_PIN, adminPin: ADMIN_PIN });
@@ -485,6 +485,7 @@ async function handle(req, res) {
 }
 
 // ---------- back office (admin) API ----------
+const shopInfo = () => ({ name: getSetting('shopName', '') || RESTAURANT_NAME, logo: getSetting('logo', '') || null });
 function themeInfo() {
   const theme = getSetting('theme', 'default');
   return { theme, banner: getSetting('banner:' + theme, '') || null, effects: getSetting('effects', true) !== false };
@@ -606,6 +607,14 @@ async function adminApi(req, res, p, url) {
     db.prepare('UPDATE tables SET token = ? WHERE id = ?').run(newToken(), id);
     db.prepare('SELECT id FROM table_sessions WHERE table_id = ? AND closed_at IS NULL').all(id).forEach((s) => closeSession(s.id, 'regen')); // old QR stops working
     return send(res, 200, { ok: true });
+  }
+  // shop name and logo (logo = transparent PNG with the shop name, shown on the guest menu and QR cards)
+  if (p === '/api/admin/shop') {
+    if (req.method === 'POST') {
+      if ('name' in body) { const n = String(body.name || '').trim().slice(0, 60); setSetting('shopName', n); }
+      if ('logo' in body) { const u = body.logo; if (u !== null && !/^\/uploads\/[\w-]+\.(jpg|png|webp)$/.test(u || '')) return send(res, 400, { error: 'IMAGE' }); setSetting('logo', u || ''); }
+    }
+    return send(res, 200, { ...shopInfo(), defaultName: RESTAURANT_NAME });
   }
   // festival theme for the guest page
   if (p === '/api/admin/theme') {

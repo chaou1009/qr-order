@@ -13,6 +13,9 @@
   .hero { background: var(--surface); padding: 18px 16px 14px; }
   .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand.has-logo { flex-wrap: wrap; gap: 6px 12px; }
+  .brand.has-logo .table-pill { margin-top: 0; }
+  .brand-logo { display: block; max-height: 60px; max-width: min(200px, 48vw); width: auto; height: auto; object-fit: contain; }
   .logo { width: 44px; height: 44px; border-radius: 14px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
   .brand h1 { font-size: 18px; margin: 0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .table-pill { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); padding: 2px 10px; border-radius: 999px; }
@@ -412,8 +415,9 @@ function renderPage() {
     <header class="hero">
       <div id="festBar"></div>
       <div class="hero-top">
-        <div class="brand"><div class="logo">${esc(initial)}</div>
-          <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>
+        ${config.logo ? `<div class="brand has-logo"><img class="brand-logo" src="${esc(config.logo)}" alt="${esc(config.name)}"><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div>`
+        : `<div class="brand"><div class="logo">${esc(initial)}</div>
+          <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>`}
         <div class="hero-actions">
           <button class="icon-btn" id="langBtn" aria-label="${esc(t('language'))}"><span>${{ en: 'EN', ms: 'BM', zh: '中' }[lang]}</span></button>
         </div>
