@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d1b19">
+<title>Back office</title>
+<link rel="stylesheet" href="/app.css">
+<style>
+  body { background: var(--bg); min-height: 100vh; }
+  .top { position: sticky; top: 0; z-index: 10; background: var(--ink); color: #fff; display: flex; align-items: center; gap: 12px; padding: 10px 16px; padding-top: max(10px, env(safe-area-inset-top)); flex-wrap: wrap; }
+  .top h1 { font-size: 17px; margin: 0; flex: 1; min-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg { display: flex; background: rgba(255,255,255,.12); border-radius: 12px; padding: 3px; flex-wrap: wrap; }
+  .seg button { border: 0; background: none; color: #fff; padding: 8px 14px; border-radius: 9px; font-weight: 700; font-size: 15px; }
+  .seg button.on { background: #fff; color: var(--ink); }
+  .pill { border: 1px solid rgba(255,255,255,.25); background: none; color: #fff; padding: 7px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 16px 16px 60px; }
+  .bar { display: flex; gap: 10px; align-items: center; margin: 4px 0 14px; flex-wrap: wrap; }
+  .bar h2 { margin: 0; font-size: 20px; flex: 1; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 10px; font-weight: 700; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; text-decoration: none; color: var(--ink); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.danger { color: #b42318; border-color: #f3c1bd; }
+  .btn.small { padding: 6px 10px; font-size: 13px; }
+  .btn:disabled { opacity: .45; }
+  input[type=text], input[type=number], input[type=password], select, textarea { font: inherit; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; }
+  textarea { resize: vertical; min-height: 56px; }
+  .cat { margin-bottom: 22px; }
+  .cat h3 { font-size: 16px; margin: 0 0 8px; color: var(--ink-2); }
+  .dish { background: var(--surface); border-radius: 14px; padding: 12px; margin-bottom: 8px; display: grid; grid-template-columns: 64px 1fr; gap: 12px; border: 1px solid var(--line); }
+  .dish.off { opacity: .6; }
+  .thumb { width: 64px; height: 64px; border-radius: 12px; background: var(--chip) center/cover no-repeat; display: grid; place-items: center; color: var(--muted-2); font-size: 11px; }
+  .dname { font-weight: 800; font-size: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .dsub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .ctrls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-top: 10px; }
+  .field { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .field input { width: 86px; padding: 6px 8px; }
+  .chips { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; }
+  .chips button { border: 0; background: none; padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+  .chips button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+  .chips button.on.red { background: #b42318; color: #fff; }
+  .chips button.on.amber { background: #c77700; color: #fff; }
+  .switch { position: relative; display: inline-block; width: 44px; height: 26px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch span { position: absolute; inset: 0; background: var(--muted-2); border-radius: 999px; transition: .15s; cursor: pointer; }
+  .switch span::after { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .15s; }
+  .switch input:checked + span { background: #1e9e4a; }
+  .switch input:checked + span::after { transform: translateX(18px); }
+  .tag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+  .tag.red { background: #fde2e1; color: #b42318; }
+  .tag.amber { background: #fff4d6; color: #8a5a00; }
+  .tag.grey { background: var(--chip); color: var(--muted); }
+  .held { font-size: 12px; color: #8a5a00; }
+  .row { background: var(--surface); border-radius: 14px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--line); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row .grow { flex: 1; min-width: 160px; }
+  .tri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; flex: 1; min-width: 260px; }
+  @media (max-width: 640px) { .tri { grid-template-columns: 1fr; } }
+  .lbl { font-size: 12px; font-weight: 700; color: var(--muted); margin: 0 0 4px; display: block; }
+  .tok { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); }
+  .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .theme { border: 2px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); text-align: left; padding: 0; }
+  .theme.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .theme .sw { height: 64px; display: grid; place-items: center; color: #fff; font-weight: 800; padding: 6px 10px; text-align: center; font-size: 13px; }
+  .theme .tn { padding: 10px 12px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+  .theme .when { display: block; padding: 0 12px 12px; font-size: 12px; color: var(--muted); }
+
+  .modal { position: fixed; inset: 0; background: rgba(20,18,16,.5); z-index: 50; display: none; align-items: flex-start; justify-content: center; padding: 24px 12px; overflow-y: auto; }
+  .modal.show { display: flex; }
+  .box { background: var(--surface); border-radius: 18px; width: 100%; max-width: 720px; padding: 18px; }
+  .box h3 { margin: 0 0 14px; font-size: 19px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .sect { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 14px; }
+  .sect h4 { margin: 0 0 8px; font-size: 15px; }
+  .img-pick { display: flex; gap: 12px; align-items: center; }
+  .img-pick .thumb { width: 96px; height: 96px; }
+  .og { background: var(--bg); border-radius: 12px; padding: 10px; margin-bottom: 10px; }
+  .og-head { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .ch { display: grid; grid-template-columns: 1fr 1fr 1fr 90px auto; gap: 6px; margin-top: 6px; align-items: center; }
+  @media (max-width: 640px) { .ch { grid-template-columns: 1fr 1fr; } }
+  .x { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 4px 8px; }
+  .foot { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .foot .sp { flex: 1; }
+  .login { max-width: 340px; margin: 14vh auto; background: var(--surface); padding: 24px; border-radius: 18px; text-align: center; }
+  .login input { text-align: center; font-size: 24px; letter-spacing: .3em; margin: 14px 0; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 12px; font-weight: 600; opacity: 0; transition: .2s; z-index: 80; pointer-events: none; max-width: calc(100% - 32px); }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+  .req::after { content: ' *'; color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="top" id="top" hidden>
+  <h1 id="title"></h1>
+  <div class="seg" id="tabs"></div>
+  <a class="pill" href="/staff" id="toStaff"></a>
+  <button class="pill" id="langBtn"></button>
+</div>
+<div class="wrap" id="main"></div>
+<div class="modal" id="modal"><div class="box" id="box"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+const A = {
+  zh: { title: '管理后台', dishes: '菜品', cats: '分类', tables: '桌台', theme: '节日主题', toStaff: '返回接单', login: '管理后台登录', loginSub: '请输入管理密码', enter: '登录', badPin: '密码不正确，请再试一次', tooMany: '尝试次数较多，请稍后再试',
+    addDish: '新增菜品', edit: '编辑', price: '价格 RM', stock: '剩余份数', stockPh: '不限', listed: '上架', onSale: '在售', soldToday: '今日售罄', soldUntil: '售罄至重新开启', unlisted: '已下架',
+    soldTodayTag: '今日售罄（明天自动恢复）', soldUntilTag: '售罄（需手动开启）', stockOut: '限量已卖完', left: '剩 {n} 份', held: '{n} 份在顾客购物车中', cook: '烹制 {m} 分钟', noImg: '无图片',
+    dishesHint: '改价格、剩余份数后按回车或点别处即保存。剩余份数留空 = 不限量；填数字后顾客会看到“仅剩 N 份”，卖完自动显示售罄。', saved: '已保存', err: '保存失败，请再试一次',
+    editDish: '编辑菜品', newDish: '新增菜品', nameZh: '中文名称', nameEn: '英文名称', nameMs: '马来文名称', descZh: '中文介绍', descEn: '英文介绍', descMs: '马来文介绍', enHint: '顾客手机不是中/马来文时显示英文，建议三种都填写；没填的语言会显示英文。',
+    category: '分类', cookMin: '一般烹制时间（分钟）', cookHint: '顾客要过了这个时间（加上忙碌时的额外时间）才能提醒服务员“还有菜未上桌”。', photo: '图片', pickPhoto: '选择图片', removePhoto: '移除图片', uploading: '图片上传中…',
+    options: '规格 / 加料', addGroup: '新增选项组', groupName: '选项组名称', single: '单选', multi: '多选', required: '必选', choice: '选项', extra: '加价 RM', addChoice: '新增选项', removeGroup: '删除选项组',
+    save: '保存', cancel: '取消', del: '删除菜品', delConfirm: '确定删除「{x}」吗？已下的订单不受影响。如果只是暂时不卖，建议用“下架”或“售罄”。', needName: '请至少填写一个名称（建议英文）', needPrice: '请填写正确的价格', needCat: '请先新增分类',
+    addCat: '新增分类', catsHint: '分类名称三种语言，顺序就是顾客菜单上的顺序。', up: '上移', down: '下移', delCat: '删除', catNotEmpty: '这个分类里还有菜品，请先把菜品移到别的分类或删除。', delCatConfirm: '确定删除这个分类吗？',
+    addTable: '新增桌台', tableName: '桌号 / 名称', tablesHint: '停用的桌台扫码后无法点单。重新生成二维码后，旧二维码立即失效，需要重新打印贴上。', active: '使用中', regen: '重新生成二维码', regenConfirm: '确定为「{x}」重新生成二维码吗？旧的二维码会立即失效，正在用餐的这一桌也会被清台。', printQr: '打印二维码', exists: '这个桌号已经存在',
+    themeHint: '选择后顾客点单页立即换上节日配色和祝福横幅（约 3 秒内生效）。节日过后记得切回“默认”。', current: '使用中',
+    th_default: '默认', th_cny: '农历新年', th_merdeka: '国庆日 / 马来西亚日', th_raya: '开斋节', th_deepavali: '屠妖节', th_gawai: '丰收节 Gawai', th_christmas: '圣诞节',
+    w_default: '平日使用', w_cny: '1–2 月', w_merdeka: '8 月 31 日 · 9 月 16 日', w_raya: '依伊斯兰历', w_deepavali: '10–11 月', w_gawai: '6 月 1–2 日', w_christmas: '12 月' },
+  en: { title: 'Back office', dishes: 'Dishes', cats: 'Categories', tables: 'Tables', theme: 'Festive theme', toStaff: 'Back to orders', login: 'Back office sign in', loginSub: 'Please enter the admin PIN', enter: 'Sign in', badPin: 'Incorrect PIN, please try again', tooMany: 'Too many attempts, please try again later',
+    addDish: 'Add dish', edit: 'Edit', price: 'Price RM', stock: 'Portions left', stockPh: 'No limit', listed: 'Listed', onSale: 'On sale', soldToday: 'Sold out today', soldUntil: 'Sold out until re-enabled', unlisted: 'Hidden',
+    soldTodayTag: 'Sold out today (back tomorrow)', soldUntilTag: 'Sold out (manual)', stockOut: 'Limited portions sold out', left: '{n} left', held: '{n} in guests\' carts', cook: 'Cook {m} min', noImg: 'No photo',
+    dishesHint: 'Price and portions save when you press Enter or tap elsewhere. Leave portions empty for no limit; with a number, guests see "Only N left" and the dish shows sold out at 0.', saved: 'Saved', err: 'Could not save, please try again',
+    editDish: 'Edit dish', newDish: 'New dish', nameZh: 'Chinese name', nameEn: 'English name', nameMs: 'Malay name', descZh: 'Chinese description', descEn: 'English description', descMs: 'Malay description', enHint: 'Phones in other languages show English. Any language left empty falls back to English.',
+    category: 'Category', cookMin: 'Usual cooking time (minutes)', cookHint: 'Guests can remind staff about a missing dish only after this time (plus any busy extra time).', photo: 'Photo', pickPhoto: 'Choose photo', removePhoto: 'Remove photo', uploading: 'Uploading photo…',
+    options: 'Options / add-ons', addGroup: 'Add option group', groupName: 'Group name', single: 'Pick one', multi: 'Pick any', required: 'Required', choice: 'Choice', extra: 'Extra RM', addChoice: 'Add choice', removeGroup: 'Remove group',
+    save: 'Save', cancel: 'Cancel', del: 'Delete dish', delConfirm: 'Delete "{x}"? Past orders are not affected. To pause it, use Hidden or Sold out instead.', needName: 'Please enter at least one name (English recommended)', needPrice: 'Please enter a valid price', needCat: 'Please add a category first',
+    addCat: 'Add category', catsHint: 'Category names in three languages. This order is the menu order guests see.', up: 'Up', down: 'Down', delCat: 'Delete', catNotEmpty: 'This category still has dishes. Move or delete them first.', delCatConfirm: 'Delete this category?',
+    addTable: 'Add table', tableName: 'Table name', tablesHint: 'Inactive tables cannot order. Regenerating a QR code stops the old one immediately, so print and replace it.', active: 'Active', regen: 'New QR code', regenConfirm: 'Create a new QR code for "{x}"? The old QR stops working at once and the table is cleared.', printQr: 'Print QR codes', exists: 'This table name already exists',
+    themeHint: 'The guest menu switches to the festive colours and greeting banner within about 3 seconds. Remember to switch back to Default afterwards.', current: 'In use',
+    th_default: 'Default', th_cny: 'Chinese New Year', th_merdeka: 'Merdeka / Malaysia Day', th_raya: 'Hari Raya', th_deepavali: 'Deepavali', th_gawai: 'Gawai', th_christmas: 'Christmas',
+    w_default: 'Everyday', w_cny: 'Jan – Feb', w_merdeka: '31 Aug · 16 Sep', w_raya: 'Islamic calendar', w_deepavali: 'Oct – Nov', w_gawai: '1–2 June', w_christmas: 'December' },
+  ms: { title: 'Pejabat belakang', dishes: 'Hidangan', cats: 'Kategori', tables: 'Meja', theme: 'Tema perayaan', toStaff: 'Kembali ke pesanan', login: 'Log masuk pentadbir', loginSub: 'Sila masukkan PIN pentadbir', enter: 'Log masuk', badPin: 'PIN tidak betul, sila cuba lagi', tooMany: 'Terlalu banyak cubaan, sila cuba sebentar lagi',
+    addDish: 'Tambah hidangan', edit: 'Ubah', price: 'Harga RM', stock: 'Baki hidangan', stockPh: 'Tiada had', listed: 'Dipaparkan', onSale: 'Dijual', soldToday: 'Habis hari ini', soldUntil: 'Habis sehingga dibuka', unlisted: 'Disembunyikan',
+    soldTodayTag: 'Habis hari ini (esok dibuka semula)', soldUntilTag: 'Habis (manual)', stockOut: 'Had hidangan sudah habis', left: 'Tinggal {n}', held: '{n} dalam troli pelanggan', cook: 'Masak {m} min', noImg: 'Tiada gambar',
+    dishesHint: 'Harga dan baki disimpan apabila tekan Enter atau ketik di tempat lain. Kosongkan baki untuk tiada had; jika ada nombor, pelanggan nampak "Tinggal N" dan hidangan habis pada 0.', saved: 'Disimpan', err: 'Gagal disimpan, sila cuba lagi',
+    editDish: 'Ubah hidangan', newDish: 'Hidangan baharu', nameZh: 'Nama Cina', nameEn: 'Nama Inggeris', nameMs: 'Nama Melayu', descZh: 'Penerangan Cina', descEn: 'Penerangan Inggeris', descMs: 'Penerangan Melayu', enHint: 'Telefon dalam bahasa lain memaparkan Bahasa Inggeris. Bahasa yang kosong akan memaparkan Bahasa Inggeris.',
+    category: 'Kategori', cookMin: 'Masa memasak biasa (minit)', cookHint: 'Pelanggan hanya boleh mengingatkan staf selepas masa ini (tambah masa sibuk).', photo: 'Gambar', pickPhoto: 'Pilih gambar', removePhoto: 'Buang gambar', uploading: 'Memuat naik gambar…',
+    options: 'Pilihan / tambahan', addGroup: 'Tambah kumpulan pilihan', groupName: 'Nama kumpulan', single: 'Pilih satu', multi: 'Pilih mana-mana', required: 'Wajib', choice: 'Pilihan', extra: 'Tambahan RM', addChoice: 'Tambah pilihan', removeGroup: 'Buang kumpulan',
+    save: 'Simpan', cancel: 'Batal', del: 'Padam hidangan', delConfirm: 'Padam "{x}"? Pesanan lama tidak terjejas. Untuk berhenti sementara, gunakan Disembunyikan atau Habis.', needName: 'Sila isi sekurang-kurangnya satu nama (Inggeris disyorkan)', needPrice: 'Sila isi harga yang betul', needCat: 'Sila tambah kategori dahulu',
+    addCat: 'Tambah kategori', catsHint: 'Nama kategori dalam tiga bahasa. Susunan ini ialah susunan menu pelanggan.', up: 'Naik', down: 'Turun', delCat: 'Padam', catNotEmpty: 'Kategori ini masih ada hidangan. Pindahkan atau padam dahulu.', delCatConfirm: 'Padam kategori ini?',
+    addTable: 'Tambah meja', tableName: 'Nama meja', tablesHint: 'Meja tidak aktif tidak boleh membuat pesanan. Kod QR baharu menghentikan kod lama serta-merta; sila cetak dan tukar.', active: 'Aktif', regen: 'Kod QR baharu', regenConfirm: 'Buat kod QR baharu untuk "{x}"? Kod lama berhenti serta-merta dan meja akan dikosongkan.', printQr: 'Cetak kod QR', exists: 'Nama meja ini sudah wujud',
+    themeHint: 'Menu pelanggan bertukar kepada warna dan sepanduk perayaan dalam kira-kira 3 saat. Ingat untuk tukar semula ke Biasa selepas itu.', current: 'Digunakan',
+    th_default: 'Biasa', th_cny: 'Tahun Baru Cina', th_merdeka: 'Merdeka / Hari Malaysia', th_raya: 'Hari Raya', th_deepavali: 'Deepavali', th_gawai: 'Gawai', th_christmas: 'Krismas',
+    w_default: 'Setiap hari', w_cny: 'Jan – Feb', w_merdeka: '31 Ogos · 16 Sep', w_raya: 'Kalendar Hijrah', w_deepavali: 'Okt – Nov', w_gawai: '1–2 Jun', w_christmas: 'Disember' },
+};
+const THEME_LOOK = { default: 'linear-gradient(90deg,#e2552b,#f08a4b)', cny: 'linear-gradient(90deg,#b3121b,#e03a2f,#b3121b)', merdeka: 'linear-gradient(90deg,#0b2a7a 0 40%,#c8102e 40% 100%)',
+  raya: 'linear-gradient(90deg,#0b5a33,#17914f,#0b5a33)', deepavali: 'linear-gradient(90deg,#6b21a8,#c2410c,#6b21a8)', gawai: 'linear-gradient(90deg,#6f3b08,#b8741f,#6f3b08)', christmas: 'linear-gradient(90deg,#11603a,#1d8a52,#11603a)' };
+const THEME_GREET = { default: 'Welcome!', cny: '新春快乐，恭喜发财！', merdeka: 'Selamat Hari Merdeka!', raya: 'Maaf Zahir & Batin', deepavali: 'Happy Deepavali!', gawai: 'Gayu Guru Gerai Nyamai', christmas: 'Merry Christmas!' };
+const LANGS = ['zh', 'en', 'ms'], LANG_LABEL = { zh: '中文', en: 'EN', ms: 'BM' };
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+let lang = store.get('staffLang', 'zh'); if (!A[lang]) lang = 'zh';
+const tr = (k, v = {}) => (A[lang][k] ?? A.zh[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? '');
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const L = (o) => (o && (o[lang] || o.en || o.zh || o.ms)) || '';
+const rm = (sen) => (sen / 100).toFixed(2);
+let toastT; const toast = (m) => { const e = $('toast'); e.textContent = m; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), 2600); };
+
+async function api(url, opt = {}) {
+  const o = { ...opt, headers: { 'Content-Type': 'application/json' } }; if (opt.body && typeof opt.body !== 'string') o.body = JSON.stringify(opt.body);
+  const r = await fetch(url, o); const data = await r.json().catch(() => ({}));
+  if (r.status === 401 && url !== '/api/staff/login') { showLogin(); throw Object.assign(new Error('login'), { status: 401, data }); }
+  if (!r.ok) throw Object.assign(new Error(data.error || 'err'), { status: r.status, data });
+  return data;
+}
+
+let view = store.get('adminView', 'dishes'), menu = [], tables = [], theme = 'default', themes = [];
+const VIEWS = ['dishes', 'cats', 'tables', 'theme'];
+function labels() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
+  document.title = tr('title'); $('title').textContent = tr('title'); $('toStaff').textContent = tr('toStaff'); $('langBtn').textContent = LANG_LABEL[lang];
+  $('tabs').innerHTML = VIEWS.map((v) => `<button data-v="${v}" class="${v === view ? 'on' : ''}">${esc(tr(v))}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach((b) => b.onclick = () => { view = b.dataset.v; store.set('adminView', view); labels(); load(); });
+}
+$('langBtn').onclick = () => { lang = LANGS[(LANGS.indexOf(lang) + 1) % 3]; store.set('staffLang', lang); labels(); draw(); };
+
+function showLogin(msg) {
+  $('top').hidden = true; $('modal').classList.remove('show');
+  $('main').innerHTML = `<form class="login" id="lf"><h2 style="margin:0">${esc(tr('login'))}</h2><p class="hint" style="margin:6px 0 0">${esc(tr('loginSub'))}</p>
+    <input type="password" inputmode="numeric" autocomplete="current-password" id="pin" autofocus><div class="hint" style="color:#b42318">${esc(msg || '')}</div>
+    <button class="btn primary" style="width:100%;justify-content:center;padding:13px">${esc(tr('enter'))}</button>
+    <div style="margin-top:14px">${LANGS.map((l) => `<button type="button" class="btn small" data-lg="${l}">${LANG_LABEL[l]}</button>`).join(' ')}</div></form>`;
+  $('main').querySelectorAll('[data-lg]').forEach((b) => b.onclick = () => { lang = b.dataset.lg; store.set('staffLang', lang); showLogin(); });
+  $('lf').onsubmit = async (e) => { e.preventDefault();
+    try { await api('/api/staff/login', { method: 'POST', body: { pin: $('pin').value, role: 'admin' } }); start(); }
+    catch (er) { showLogin(er.status === 429 ? tr('tooMany') : tr('badPin')); } };
+}
+
+async function load() {
+  try {
+    if (view === 'dishes' || view === 'cats') menu = (await api('/api/admin/menu')).categories;
+    if (view === 'tables') tables = (await api('/api/admin/tables')).tables;
+    if (view === 'theme') ({ theme, themes } = await api('/api/admin/theme'));
+    draw();
+  } catch (e) { if (e.status !== 401) toast(tr('err')); }
+}
+function draw() {
+  if ($('top').hidden) return;
+  ({ dishes: drawDishes, cats: drawCats, tables: drawTables, theme: drawTheme })[view]();
+}
+
+// ---------------- dishes ----------------
+function dishStatus(d) {
+  if (!d.listed) return `<span class="tag grey">${esc(tr('unlisted'))}</span>`;
+  if (d.soldOut === 'until') return `<span class="tag red">${esc(tr('soldUntilTag'))}</span>`;
+  if (d.soldOut === 'today') return `<span class="tag amber">${esc(tr('soldTodayTag'))}</span>`;
+  if (d.stock != null && d.stock <= 0) return `<span class="tag red">${esc(tr('stockOut'))}</span>`;
+  if (d.stock != null) return `<span class="tag amber">${esc(tr('left', { n: d.stock }))}</span>`;
+  return '';
+}
+function dishRow(d) {
+  const so = d.soldOut;
+  return `<div class="dish${d.listed ? '' : ' off'}" data-id="${d.id}">
+    <div class="thumb" style="${d.image ? `background-image:url('${esc(d.image)}')` : ''}">${d.image ? '' : esc(tr('noImg'))}</div>
+    <div><div class="dname">${esc(L(d.name))} ${dishStatus(d)}</div>
+      <div class="dsub">${esc([...new Set([d.name.zh, d.name.en, d.name.ms].filter((x) => x && x !== L(d.name))), tr('cook', { m: d.cookMinutes })].join(' · '))}</div>
+      <div class="ctrls">
+        <label class="field">${esc(tr('listed'))}<span class="switch"><input type="checkbox" data-q="listed" ${d.listed ? 'checked' : ''}><span></span></span></label>
+        <span class="chips" data-q="soldOut"><button data-m="none" class="${so === 'none' ? 'on' : ''}">${esc(tr('onSale'))}</button><button data-m="today" class="${so === 'today' ? 'on amber' : ''}">${esc(tr('soldToday'))}</button><button data-m="until" class="${so === 'until' ? 'on red' : ''}">${esc(tr('soldUntil'))}</button></span>
+        <label class="field">${esc(tr('price'))}<input type="number" step="0.10" min="0" inputmode="decimal" data-q="price" value="${rm(d.price)}"></label>
+        <label class="field">${esc(tr('stock'))}<input type="number" min="0" step="1" inputmode="numeric" data-q="stock" placeholder="${esc(tr('stockPh'))}" value="${d.stock ?? ''}"></label>
+        ${d.held ? `<span class="held">${esc(tr('held', { n: d.held }))}</span>` : ''}
+        <span style="flex:1"></span><button class="btn small" data-edit>${esc(tr('edit'))}</button>
+      </div></div></div>`;
+}
+function drawDishes() {
+  $('main').innerHTML = `<div class="bar"><h2>${esc(tr('dishes'))}</h2><button class="btn primary" id="addDish">+ ${esc(tr('addDish'))}</button></div><p class="hint">${esc(tr('dishesHint'))}</p>` +
+    menu.map((c) => `<div class="cat"><h3>${esc(L(c.name))}</h3>${c.items.map(dishRow).join('')}</div>`).join('');
+  $('addDish').onclick = () => menu.length ? openDish(null) : toast(tr('needCat'));
+  drawDishesBind();
+}
+function drawDishesBind() {
+  $('main').querySelectorAll('.dish').forEach((el) => {
+    if (el._bound) return; el._bound = true;
+    const id = Number(el.dataset.id), d = menu.flatMap((c) => c.items).find((x) => x.id === id);
+    const quick = async (patch) => {
+      try { const r = await api(`/api/admin/items/${id}/quick`, { method: 'POST', body: patch }); Object.assign(d, r.item); toast(tr('saved')); }
+      catch (e) { if (e.status !== 401) toast(e.data?.error === 'PRICE' ? tr('needPrice') : tr('err')); }
+      const fresh = document.createElement('div'); fresh.innerHTML = dishRow(d); el.replaceWith(fresh.firstElementChild); drawDishesBind();
+    };
+    el.querySelector('[data-q=listed]').onchange = (e) => quick({ listed: e.target.checked });
+    el.querySelectorAll('[data-q=soldOut] button').forEach((b) => b.onclick = () => quick({ soldOut: b.dataset.m }));
+    const pr = el.querySelector('[data-q=price]'); pr.onchange = () => quick({ price: pr.value });
+    const st = el.querySelector('[data-q=stock]'); st.onchange = () => quick({ stock: st.value === '' ? null : Number(st.value) });
+    [pr, st].forEach((i) => i.onkeydown = (e) => { if (e.key === 'Enter') i.blur(); });
+    el.querySelector('[data-edit]').onclick = () => openDish(d);
+  });
+}
+
+// ---------------- dish editor ----------------
+let draft = null;
+const blank3 = () => ({ zh: '', en: '', ms: '' });
+function openDish(d) {
+  draft = d ? JSON.parse(JSON.stringify(d)) : { id: null, categoryId: menu[0].id, name: blank3(), description: blank3(), price: 0, image: null, options: [], listed: true, cookMinutes: 15 };
+  draft.name = { ...blank3(), ...draft.name }; draft.description = { ...blank3(), ...draft.description };
+  draft.options.forEach((g) => { g.name = { ...blank3(), ...g.name }; g.choices.forEach((c) => c.name = { ...blank3(), ...c.name }); });
+  drawEditor(); $('modal').classList.add('show'); $('modal').scrollTop = 0;
+}
+function tri(prefix, obj, keyPrefix, area) {
+  const tag = area ? 'textarea' : 'input type="text"';
+  return `<div class="tri">${['zh', 'en', 'ms'].map((l) => `<div><label class="lbl${prefix === 'name' && l === 'en' ? ' req' : ''}">${esc(tr(keyPrefix + l[0].toUpperCase() + l[1]))}</label><${tag} data-f="${prefix}.${l}" maxlength="${area ? 300 : 80}" value="${area ? '' : esc(obj[l])}">${area ? esc(obj[l]) + '</textarea>' : ''}</div>`).join('')}</div>`;
+}
+function drawEditor() {
+  const d = draft; const cats = menu.map((c) => `<option value="${c.id}" ${c.id === d.categoryId ? 'selected' : ''}>${esc(L(c.name))}</option>`).join('');
+  $('box').innerHTML = `<h3>${esc(tr(d.id ? 'editDish' : 'newDish'))}</h3>
+    ${tri('name', d.name, 'name')}
+    <p class="hint" style="margin:6px 0 10px">${esc(tr('enHint'))}</p>
+    ${tri('description', d.description, 'desc', true)}
+    <div class="grid2" style="margin-top:10px">
+      <div><label class="lbl req">${esc(tr('price'))}</label><input type="number" step="0.10" min="0" inputmode="decimal" id="fPrice" value="${rm(d.price)}"></div>
+      <div><label class="lbl">${esc(tr('category'))}</label><select id="fCat">${cats}</select></div>
+      <div><label class="lbl">${esc(tr('cookMin'))}</label><input type="number" min="1" max="240" id="fCook" value="${d.cookMinutes}"><p class="hint" style="margin:4px 0 0;font-size:12px">${esc(tr('cookHint'))}</p></div>
+      <div><label class="lbl">${esc(tr('listed'))}</label><label class="switch"><input type="checkbox" id="fListed" ${d.listed ? 'checked' : ''}><span></span></label></div>
+    </div>
+    <div class="sect"><h4>${esc(tr('photo'))}</h4><div class="img-pick"><div class="thumb" id="fThumb" style="${d.image ? `background-image:url('${esc(d.image)}')` : ''}">${d.image ? '' : esc(tr('noImg'))}</div>
+      <div><label class="btn">${esc(tr('pickPhoto'))}<input type="file" accept="image/*" id="fFile" hidden></label> ${d.image ? `<button class="btn small" id="fNoImg">${esc(tr('removePhoto'))}</button>` : ''}</div></div></div>
+    <div class="sect"><h4>${esc(tr('options'))}</h4><div id="groups">${d.options.map(groupHTML).join('')}</div><button class="btn small" id="addGroup">+ ${esc(tr('addGroup'))}</button></div>
+    <div class="foot">${d.id ? `<button class="btn danger" id="fDel">${esc(tr('del'))}</button>` : ''}<span class="sp"></span><button class="btn" id="fCancel">${esc(tr('cancel'))}</button><button class="btn primary" id="fSave">${esc(tr('save'))}</button></div>`;
+  bindEditor();
+}
+function groupHTML(g, gi) {
+  return `<div class="og" data-g="${gi}">
+    <div class="tri">${['zh', 'en', 'ms'].map((l) => `<input type="text" maxlength="80" data-gf="${l}" placeholder="${esc(tr('groupName'))} (${LANG_LABEL[l]})" value="${esc(g.name[l])}">`).join('')}</div>
+    <div class="og-head"><span class="chips"><button data-gt="single" class="${g.type !== 'multi' ? 'on' : ''}">${esc(tr('single'))}</button><button data-gt="multi" class="${g.type === 'multi' ? 'on' : ''}">${esc(tr('multi'))}</button></span>
+      <label class="field"><input type="checkbox" data-greq ${g.required ? 'checked' : ''} style="width:auto"> ${esc(tr('required'))}</label><span style="flex:1"></span><button class="btn small danger" data-gdel>${esc(tr('removeGroup'))}</button></div>
+    ${g.choices.map((c, ci) => `<div class="ch" data-c="${ci}">${['zh', 'en', 'ms'].map((l) => `<input type="text" maxlength="80" data-cf="${l}" placeholder="${esc(tr('choice'))} (${LANG_LABEL[l]})" value="${esc(c.name[l])}">`).join('')}
+      <input type="number" step="0.10" min="0" data-cp placeholder="${esc(tr('extra'))}" value="${c.price || ''}"><button class="x" data-cdel aria-label="×">×</button></div>`).join('')}
+    <button class="btn small" data-cadd style="margin-top:8px">+ ${esc(tr('addChoice'))}</button></div>`;
+}
+function readEditor() {
+  const d = draft, box = $('box');
+  box.querySelectorAll('[data-f]').forEach((i) => { const [k, l] = i.dataset.f.split('.'); d[k][l] = i.value; });
+  d.price = Math.round(Number($('fPrice').value) * 100); d.categoryId = Number($('fCat').value); d.cookMinutes = Number($('fCook').value) || 15; d.listed = $('fListed').checked;
+  box.querySelectorAll('.og').forEach((el) => { const g = d.options[Number(el.dataset.g)];
+    el.querySelectorAll('[data-gf]').forEach((i) => g.name[i.dataset.gf] = i.value); g.required = el.querySelector('[data-greq]').checked;
+    el.querySelectorAll('.ch').forEach((ce) => { const c = g.choices[Number(ce.dataset.c)]; ce.querySelectorAll('[data-cf]').forEach((i) => c.name[i.dataset.cf] = i.value);
+      const p = Number(ce.querySelector('[data-cp]').value); if (p > 0) c.price = p; else delete c.price; }); });
+}
+function bindEditor() {
+  const d = draft, box = $('box'), redraw = () => { readEditor(); drawEditor(); };
+  $('fCancel').onclick = () => $('modal').classList.remove('show');
+  $('addGroup').onclick = () => { readEditor(); d.options.push({ name: blank3(), type: 'single', required: false, choices: [{ name: blank3() }, { name: blank3() }] }); drawEditor(); };
+  box.querySelectorAll('.og').forEach((el) => { const gi = Number(el.dataset.g), g = d.options[gi];
+    el.querySelectorAll('[data-gt]').forEach((b) => b.onclick = () => { readEditor(); g.type = b.dataset.gt; drawEditor(); });
+    el.querySelector('[data-gdel]').onclick = () => { readEditor(); d.options.splice(gi, 1); drawEditor(); };
+    el.querySelector('[data-cadd]').onclick = () => { readEditor(); g.choices.push({ name: blank3() }); drawEditor(); };
+    el.querySelectorAll('[data-cdel]').forEach((b) => b.onclick = () => { readEditor(); g.choices.splice(Number(b.closest('.ch').dataset.c), 1); drawEditor(); });
+  });
+  if ($('fNoImg')) $('fNoImg').onclick = () => { readEditor(); d.image = null; drawEditor(); };
+  $('fFile').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return; readEditor(); toast(tr('uploading'));
+    try { const dataUrl = await shrink(f); const r = await api('/api/admin/upload', { method: 'POST', body: { dataUrl } }); d.image = r.url; drawEditor(); toast(tr('saved')); }
+    catch (er) { if (er.status !== 401) toast(tr('err')); }
+  };
+  if ($('fDel')) $('fDel').onclick = async () => {
+    if (!confirm(tr('delConfirm', { x: L(d.name) }))) return;
+    try { await api('/api/admin/items/' + d.id, { method: 'DELETE' }); $('modal').classList.remove('show'); load(); } catch (er) { if (er.status !== 401) toast(tr('err')); }
+  };
+  $('fSave').onclick = async () => {
+    readEditor();
+    if (!d.name.zh.trim() && !d.name.en.trim() && !d.name.ms.trim()) return toast(tr('needName'));
+    if (!Number.isFinite(d.price) || d.price < 0 || $('fPrice').value === '') return toast(tr('needPrice'));
+    const body = { categoryId: d.categoryId, name: d.name, description: d.description, price: d.price / 100, image: d.image, listed: d.listed, cookMinutes: d.cookMinutes, options: d.options };
+    try { await api(d.id ? '/api/admin/items/' + d.id : '/api/admin/items', { method: d.id ? 'PUT' : 'POST', body }); $('modal').classList.remove('show'); toast(tr('saved')); load(); }
+    catch (er) { if (er.status !== 401) toast(er.data?.error === 'PRICE' ? tr('needPrice') : er.data?.error === 'NAME' ? tr('needName') : tr('err')); }
+  };
+}
+// Resize the photo in the browser (max 1000px, JPEG) so uploads stay small even from a phone camera.
+function shrink(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => { const k = Math.min(1, 1000 / Math.max(img.width, img.height)); const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', 0.82)); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img')); }; img.src = url;
+  });
+}
+
+// ---------------- categories ----------------
+function drawCats() {
+  const row = (c, i) => `<div class="row" data-id="${c.id}">${['zh', 'en', 'ms'].map((l) => `<div class="grow"><label class="lbl">${LANG_LABEL[l]}</label><input type="text" maxlength="80" data-l="${l}" value="${esc(c.name[l] || '')}"></div>`).join('')}
+    <div style="display:flex;gap:6px;align-self:flex-end"><button class="btn small" data-mv="-1" ${i === 0 ? 'disabled' : ''}>↑ ${esc(tr('up'))}</button><button class="btn small" data-mv="1" ${i === menu.length - 1 ? 'disabled' : ''}>↓ ${esc(tr('down'))}</button><button class="btn small primary" data-save>${esc(tr('save'))}</button><button class="btn small danger" data-del>${esc(tr('delCat'))}</button></div></div>`;
+  $('main').innerHTML = `<div class="bar"><h2>${esc(tr('cats'))}</h2></div><p class="hint">${esc(tr('catsHint'))}</p>${menu.map(row).join('')}
+    <div class="row" id="newCat">${['zh', 'en', 'ms'].map((l) => `<div class="grow"><label class="lbl">${LANG_LABEL[l]}</label><input type="text" maxlength="80" data-l="${l}"></div>`).join('')}<button class="btn primary" style="align-self:flex-end" id="addCat">+ ${esc(tr('addCat'))}</button></div>`;
+  const nameOf = (el) => Object.fromEntries([...el.querySelectorAll('[data-l]')].map((i) => [i.dataset.l, i.value]));
+  $('main').querySelectorAll('.row[data-id]').forEach((el, i) => { const id = Number(el.dataset.id);
+    el.querySelector('[data-save]').onclick = async () => { try { await api('/api/admin/categories/' + id, { method: 'PUT', body: { name: nameOf(el) } }); toast(tr('saved')); load(); } catch (e) { if (e.status !== 401) toast(e.data?.error === 'NAME' ? tr('needName') : tr('err')); } };
+    el.querySelector('[data-del]').onclick = async () => { if (!confirm(tr('delCatConfirm'))) return;
+      try { await api('/api/admin/categories/' + id, { method: 'DELETE' }); load(); } catch (e) { if (e.status !== 401) toast(e.data?.error === 'NOT_EMPTY' ? tr('catNotEmpty') : tr('err')); } };
+    el.querySelectorAll('[data-mv]').forEach((b) => b.onclick = async () => { const ids = menu.map((c) => c.id); const j = i + Number(b.dataset.mv); [ids[i], ids[j]] = [ids[j], ids[i]];
+      try { await api('/api/admin/categories/order', { method: 'POST', body: { ids } }); load(); } catch (e) { if (e.status !== 401) toast(tr('err')); } });
+  });
+  $('addCat').onclick = async () => { try { await api('/api/admin/categories', { method: 'POST', body: { name: nameOf($('newCat')) } }); toast(tr('saved')); load(); } catch (e) { if (e.status !== 401) toast(e.data?.error === 'NAME' ? tr('needName') : tr('err')); } };
+}
+
+// ---------------- tables ----------------
+function drawTables() {
+  $('main').innerHTML = `<div class="bar"><h2>${esc(tr('tables'))}</h2><a class="btn" href="/staff/qr" target="_blank">${esc(tr('printQr'))}</a></div><p class="hint">${esc(tr('tablesHint'))}</p>
+    ${tables.map((t) => `<div class="row" data-id="${t.id}"><div style="width:130px"><label class="lbl">${esc(tr('tableName'))}</label><input type="text" maxlength="20" data-name value="${esc(t.name)}"></div>
+      <label class="field">${esc(tr('active'))}<span class="switch"><input type="checkbox" data-active ${t.active ? 'checked' : ''}><span></span></span></label>
+      <span class="tok grow">/t/${esc(t.token)}</span><button class="btn small" data-regen>${esc(tr('regen'))}</button></div>`).join('')}
+    <div class="row"><div style="width:130px"><input type="text" maxlength="20" id="newTable" placeholder="${esc(tr('tableName'))}"></div><button class="btn primary" id="addTable">+ ${esc(tr('addTable'))}</button></div>`;
+  const err = (e) => { if (e.status !== 401) toast(e.data?.error === 'EXISTS' ? tr('exists') : e.data?.error === 'NAME' ? tr('needName') : tr('err')); };
+  $('main').querySelectorAll('.row[data-id]').forEach((el) => { const id = Number(el.dataset.id), t = tables.find((x) => x.id === id);
+    const nm = el.querySelector('[data-name]'); nm.onkeydown = (e) => { if (e.key === 'Enter') nm.blur(); };
+    nm.onchange = async () => { try { await api('/api/admin/tables/' + id, { method: 'PUT', body: { name: nm.value } }); toast(tr('saved')); load(); } catch (e) { err(e); load(); } };
+    el.querySelector('[data-active]').onchange = async (e) => { try { await api('/api/admin/tables/' + id, { method: 'PUT', body: { active: e.target.checked } }); toast(tr('saved')); } catch (er) { err(er); load(); } };
+    el.querySelector('[data-regen]').onclick = async () => { if (!confirm(tr('regenConfirm', { x: t.name }))) return; try { await api(`/api/admin/tables/${id}/regen`, { method: 'POST', body: {} }); toast(tr('saved')); load(); } catch (e) { err(e); } };
+  });
+  $('addTable').onclick = async () => { try { await api('/api/admin/tables', { method: 'POST', body: { name: $('newTable').value } }); toast(tr('saved')); load(); } catch (e) { err(e); } };
+}
+
+// ---------------- festive theme ----------------
+function drawTheme() {
+  $('main').innerHTML = `<div class="bar"><h2>${esc(tr('theme'))}</h2></div><p class="hint">${esc(tr('themeHint'))}</p><div class="themes">${themes.map((k) => `
+    <button class="theme${k === theme ? ' on' : ''}" data-t="${k}"><div class="sw" style="background:${THEME_LOOK[k]}">${esc(THEME_GREET[k])}</div>
+      <div class="tn"><span>${esc(tr('th_' + k))}</span>${k === theme ? `<span class="tag amber">${esc(tr('current'))}</span>` : ''}</div><span class="when">${esc(tr('w_' + k))}</span></button>`).join('')}</div>`;
+  $('main').querySelectorAll('[data-t]').forEach((b) => b.onclick = async () => {
+    try { ({ theme } = await api('/api/admin/theme', { method: 'POST', body: { theme: b.dataset.t } })); toast(tr('saved')); drawTheme(); } catch (e) { if (e.status !== 401) toast(tr('err')); }
+  });
+}
+
+$('modal').onclick = (e) => { if (e.target === $('modal')) $('modal').classList.remove('show'); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('modal').classList.remove('show'); });
+async function start() { $('top').hidden = false; if (!VIEWS.includes(view)) view = 'dishes'; labels(); await load(); }
+start();
+</script>
+</body>
+</html>

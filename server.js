@@ -11,6 +11,7 @@ const { DatabaseSync } = require('node:sqlite');
 const PORT = Number(process.env.PORT || 3000);
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const STAFF_PIN = process.env.STAFF_PIN || '1234';
+const ADMIN_PIN = process.env.ADMIN_PIN || STAFF_PIN; // back office (menu, prices, tables, theme)
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const TZ = process.env.TZ_NAME || 'Asia/Kuala_Lumpur';
 const RESTAURANT_NAME = process.env.RESTAURANT_NAME || 'My Restaurant';
@@ -26,6 +27,8 @@ function lanUrl() {
   return pick ? `http://${pick.address}:${PORT}` : '';
 }
 fs.mkdirSync(DATA_DIR, { recursive: true });
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads'); // dish photos live with the data so backups include them
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ---------- secret for staff login cookies (persisted so restarts keep tablets logged in) ----------
 const secretFile = path.join(DATA_DIR, 'secret.key');
@@ -72,7 +75,15 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(session_id)');
 if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === 'cook_minutes')) {
   db.exec('ALTER TABLE items ADD COLUMN cook_minutes INTEGER NOT NULL DEFAULT 15'); // usual time until served
 }
+for (const [col, def] of [['sold_out_day', 'TEXT'], ['stock', 'INTEGER']]) {
+  if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE items ADD COLUMN ${col} ${def}`);
+}
 db.exec(`
+-- Dishes sitting in a guest's cart (not yet ordered) for items with limited stock, so others see "N in other carts".
+CREATE TABLE IF NOT EXISTS holds (
+  client_id TEXT NOT NULL, item_id INTEGER NOT NULL, qty INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+  PRIMARY KEY (client_id, item_id)
+);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS service_requests (
   id INTEGER PRIMARY KEY, session_id INTEGER NOT NULL, table_id INTEGER NOT NULL, table_name TEXT NOT NULL,
@@ -124,18 +135,21 @@ function readBody(req, limit = 64 * 1024) {
 
 // Staff session: signed cookie "staff=<expiry>.<hmac>"
 const sign = (v) => crypto.createHmac('sha256', SECRET).update(v).digest('base64url');
-function staffCookie() {
+function staffCookie(role = 'staff') {
   const exp = String(Date.now() + 180 * 24 * 3600 * 1000);
-  return `staff=${exp}.${sign(exp)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${180 * 24 * 3600}`;
+  return `${role}=${exp}.${sign(role + exp)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${180 * 24 * 3600}`;
 }
-function isStaff(req) {
-  const m = /(?:^|;\s*)staff=([^;]+)/.exec(req.headers.cookie || '');
+function hasCookie(req, role) {
+  const m = new RegExp(`(?:^|;\\s*)${role}=([^;]+)`).exec(req.headers.cookie || '');
   if (!m) return false;
   const [exp, sig] = m[1].split('.');
   if (!exp || !sig || Number(exp) < Date.now()) return false;
-  const good = sign(exp);
+  const good = sign(role + exp);
   return sig.length === good.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(good));
 }
+const isAdmin = (req) => hasCookie(req, 'admin');
+const isStaff = (req) => hasCookie(req, 'staff') || isAdmin(req);
+const pinOk = (pin, want) => pin.length === want.length && crypto.timingSafeEqual(Buffer.from(pin), Buffer.from(want));
 
 // Very small in-memory rate limiter (per key)
 const hits = new Map();
@@ -146,6 +160,16 @@ function limited(key, max, windowMs) {
   return arr.length > max;
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) if (!v.some((t) => now - t < 3600e3)) hits.delete(k); }, 600e3).unref();
+
+// Latest food reminder per dish line in a session: { "orderId:line": { at, handled } }
+const REMIND_COOLDOWN = 3 * 60e3;
+function remindersFor(sessionId) {
+  const out = {};
+  for (const r of db.prepare("SELECT detail, created_at, handled_at FROM service_requests WHERE session_id = ? AND type = 'remind' ORDER BY id").all(sessionId)) {
+    for (const i of parseJSON(r.detail, {}).items || []) if (i.line != null) out[`${i.orderId}:${i.line}`] = { at: r.created_at, handled: !!r.handled_at };
+  }
+  return out;
+}
 
 // ---------- table dining sessions ----------
 // Scanning a table's QR opens (or joins) that table's current session and gives the phone a "seat key".
@@ -175,15 +199,32 @@ function seatFromKey(key) {
 }
 function closeSession(id, by) { db.prepare('UPDATE table_sessions SET closed_at = ?, closed_by = ? WHERE id = ? AND closed_at IS NULL').run(Date.now(), by, id); }
 
-// ---------- menu ----------
-function loadMenu() {
+// ---------- menu, sold out, limited stock ----------
+const today = () => dayOf(Date.now());
+// Sold out = marked "until further notice", or "today only" for today's date, or limited stock used up.
+const isSoldOut = (it) => !!it.sold_out || it.sold_out_day === today() || (it.stock != null && it.stock <= 0);
+const HOLD_MS = 5 * 60e3; // a cart reservation lasts 5 minutes after the guest's phone last checked in
+function heldByOthers(itemId, clientId) {
+  return db.prepare('SELECT COALESCE(SUM(qty), 0) AS n FROM holds WHERE item_id = ? AND client_id != ? AND expires_at > ?').get(itemId, clientId || '', Date.now()).n;
+}
+// Live availability of limited / sold-out dishes for one guest: { itemId: { soldOut, stock, held } }
+function availability(clientId) {
+  const out = {};
+  for (const it of db.prepare('SELECT id, sold_out, sold_out_day, stock FROM items WHERE listed = 1').all()) {
+    if (it.stock == null && !isSoldOut(it)) continue;
+    out[it.id] = { soldOut: isSoldOut(it), stock: it.stock, held: it.stock == null ? 0 : heldByOthers(it.id, clientId) };
+  }
+  return out;
+}
+function loadMenu(clientId) {
   const cats = db.prepare('SELECT * FROM categories ORDER BY sort, id').all();
   const items = db.prepare('SELECT * FROM items WHERE listed = 1 ORDER BY sort, id').all();
   return cats.map((c) => ({
     id: c.id, name: parseJSON(c.name, {}),
     items: items.filter((i) => i.category_id === c.id).map((i) => ({
       id: i.id, name: parseJSON(i.name, {}), description: parseJSON(i.description, {}),
-      price: i.price, image: i.image, soldOut: !!i.sold_out, options: parseJSON(i.options, []),
+      price: i.price, image: i.image, soldOut: isSoldOut(i), options: parseJSON(i.options, []), cookMinutes: i.cook_minutes || 15,
+      stock: i.stock, held: i.stock == null ? 0 : heldByOthers(i.id, clientId),
     })),
   })).filter((c) => c.items.length);
 }
@@ -192,7 +233,7 @@ function loadMenu() {
 function priceLine(line, itemsById) {
   const it = itemsById.get(Number(line.itemId));
   if (!it || !it.listed) throw new Error('ITEM_UNAVAILABLE');
-  if (it.sold_out) throw Object.assign(new Error('SOLD_OUT'), { itemName: parseJSON(it.name, {}) });
+  if (isSoldOut(it)) throw Object.assign(new Error('SOLD_OUT'), { itemName: parseJSON(it.name, {}) });
   const qty = Math.floor(Number(line.qty));
   if (!(qty >= 1 && qty <= 50)) throw new Error('BAD_QTY');
   const groups = parseJSON(it.options, []);
@@ -236,6 +277,11 @@ async function handle(req, res) {
   if (req.method === 'GET' && (/^\/t\/[\w-]{6,40}$/.test(p) || p === '/o')) return serveFile(res, path.join(PUBLIC_DIR, 'order.html'));
   if (req.method === 'GET' && (p === '/staff' || p === '/staff/')) return serveFile(res, path.join(PUBLIC_DIR, 'staff.html'));
   if (req.method === 'GET' && p === '/staff/qr') return serveFile(res, path.join(PUBLIC_DIR, 'qr.html'));
+  if (req.method === 'GET' && (p === '/admin' || p === '/admin/')) return serveFile(res, path.join(PUBLIC_DIR, 'admin.html'));
+  if (req.method === 'GET' && /^\/uploads\/[\w-]+\.(jpg|png|webp)$/.test(p)) {
+    const f = path.join(UPLOAD_DIR, path.basename(p));
+    return fs.existsSync(f) ? serveFile(res, f, 'public, max-age=31536000, immutable') : serveFile(res, path.join(PUBLIC_DIR, p));
+  }
   if (req.method === 'GET' && p === '/') return serveFile(res, path.join(PUBLIC_DIR, 'home.html'));
 
   // ----- public API -----
@@ -250,7 +296,30 @@ async function handle(req, res) {
   }
   if (p === '/api/seat' && req.method === 'GET') {
     const seat = seatFromKey(url.searchParams.get('key'));
-    return seat ? send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at, busy: busyInfo(), now: Date.now() }) : send(res, 410, { error: 'SEAT_CLOSED' });
+    if (!seat) return send(res, 410, { error: 'SEAT_CLOSED' });
+    const clientId = url.searchParams.get('clientId') || '';
+    const c = db.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(client_id = ?), 0) AS mine FROM orders WHERE session_id = ? AND status != 'void'").get(clientId, seat.sess.id);
+    return send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at, busy: busyInfo(), now: Date.now(), theme: getSetting('theme', 'default'),
+      orderCount: c.n, mineCount: c.mine, avail: availability(clientId) });
+  }
+  // The guest's cart for limited dishes: reserve those portions for a few minutes so other guests see them as taken.
+  if (p === '/api/holds' && req.method === 'POST') {
+    const body = await readBody(req).catch(() => null);
+    const seat = seatFromKey(body?.seat);
+    const clientId = String(body?.clientId || '');
+    if (!seat || !/^[\w-]{10,64}$/.test(clientId)) return send(res, 410, { error: 'SEAT_CLOSED' });
+    const want = new Map();
+    for (const h of Array.isArray(body.holds) ? body.holds.slice(0, 60) : []) want.set(Number(h.itemId), (want.get(Number(h.itemId)) || 0) + Math.max(0, Math.floor(Number(h.qty) || 0)));
+    db.prepare('DELETE FROM holds WHERE client_id = ? OR expires_at < ?').run(clientId, Date.now());
+    const granted = {};
+    for (const [itemId, qty] of want) {
+      const it = db.prepare('SELECT stock FROM items WHERE id = ?').get(itemId);
+      if (!it || it.stock == null || !qty) continue;
+      const g = Math.min(qty, Math.max(0, it.stock - heldByOthers(itemId, clientId)));
+      granted[itemId] = g;
+      if (g) db.prepare('INSERT INTO holds (client_id, item_id, qty, expires_at) VALUES (?, ?, ?, ?)').run(clientId, itemId, g, Date.now() + HOLD_MS);
+    }
+    return send(res, 200, { granted, avail: availability(clientId) });
   }
   // Guest asks for help: "call" (reason) or "remind" (dishes that have not arrived yet).
   if (p === '/api/service' && req.method === 'POST') {
@@ -266,12 +335,15 @@ async function handle(req, res) {
       detail = { reason };
     } else {
       const want = Array.isArray(body.items) ? body.items.slice(0, 40) : [];
-      const items = [];
+      const items = []; const recent = remindersFor(seat.sess.id);
       for (const w of want) {
         const o = db.prepare("SELECT id, seq, items, created_at FROM orders WHERE id = ? AND session_id = ? AND status != 'void'").get(Number(w.orderId), seat.sess.id);
         const l = o && parseJSON(o.items, [])[Number(w.line)];
-        if (l) items.push({ orderId: o.id, seq: o.seq, name: l.name, qty: l.qty, takeaway: !!l.takeaway, orderedAt: o.created_at });
+        const last = recent[`${Number(w.orderId)}:${Number(w.line)}`];
+        if (last && Date.now() - last.at < REMIND_COOLDOWN) continue; // same dish reminded less than 3 minutes ago
+        if (l) items.push({ orderId: o.id, line: Number(w.line), seq: o.seq, name: l.name, qty: l.qty, takeaway: !!l.takeaway, orderedAt: o.created_at });
       }
+      if (!items.length && want.length) return send(res, 429, { error: 'COOLDOWN' });
       if (!items.length) return send(res, 400, { error: 'NO_ITEMS' });
       detail = { items };
     }
@@ -279,12 +351,12 @@ async function handle(req, res) {
       .run(seat.sess.id, seat.table.id, seat.table.name, type, JSON.stringify(detail), Date.now());
     return send(res, 201, { ok: true });
   }
-  if (p === '/api/config' && req.method === 'GET') return send(res, 200, { name: RESTAURANT_NAME, publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO });
+  if (p === '/api/config' && req.method === 'GET') return send(res, 200, { name: RESTAURANT_NAME, publicUrl: PUBLIC_URL, lanUrl: lanUrl(), demo: DEMO, theme: getSetting('theme', 'default') });
   if (DEMO && req.method === 'GET' && p === '/demo') return serveFile(res, path.join(PUBLIC_DIR, 'demo.html'));
   if (DEMO && req.method === 'GET' && p === '/api/demo') {
-    return send(res, 200, { tables: db.prepare('SELECT name, token FROM tables WHERE active = 1 ORDER BY sort, id').all(), pin: STAFF_PIN });
+    return send(res, 200, { tables: db.prepare('SELECT name, token FROM tables WHERE active = 1 ORDER BY sort, id').all(), pin: STAFF_PIN, adminPin: ADMIN_PIN });
   }
-  if (p === '/api/menu' && req.method === 'GET') return send(res, 200, { categories: loadMenu() });
+  if (p === '/api/menu' && req.method === 'GET') return send(res, 200, { categories: loadMenu(url.searchParams.get('clientId') || '') });
 
   if (p === '/api/orders' && req.method === 'POST') {
     if (limited('o:' + ip, 20, 10 * 60e3)) return send(res, 429, { error: 'TOO_MANY' });
@@ -299,6 +371,16 @@ async function handle(req, res) {
     let lines;
     try { lines = body.lines.map((l) => priceLine(l, itemsById)); }
     catch (e) { return send(res, 409, { error: e.message, itemName: e.itemName }); }
+    // Limited dishes: this order may use what is left minus what other guests currently hold in their carts.
+    const perItem = new Map(); lines.forEach((l) => perItem.set(l.itemId, (perItem.get(l.itemId) || 0) + l.qty));
+    for (const [itemId, qty] of perItem) {
+      const it = itemsById.get(itemId);
+      if (it.stock == null) continue;
+      const left = Math.max(0, it.stock - heldByOthers(itemId, clientId));
+      if (qty > left) return send(res, 409, { error: 'STOCK', itemName: parseJSON(it.name, {}), left });
+    }
+    for (const [itemId, qty] of perItem) if (itemsById.get(itemId).stock != null) db.prepare('UPDATE items SET stock = MAX(0, stock - ?) WHERE id = ?').run(qty, itemId);
+    db.prepare('DELETE FROM holds WHERE client_id = ?').run(clientId);
     const total = lines.reduce((s, l) => s + l.unit * l.qty, 0);
     const now = Date.now(); const day = dayOf(now);
     const seq = db.prepare('SELECT COALESCE(MAX(seq), 0) + 1 AS n FROM orders WHERE day = ?').get(day).n;
@@ -316,7 +398,7 @@ async function handle(req, res) {
     const clientId = url.searchParams.get('clientId') || '';
     const rows = db.prepare('SELECT id, seq, table_name, client_id, items, total, status, created_at FROM orders WHERE session_id = ? ORDER BY id DESC').all(seat.sess.id);
     return send(res, 200, { table: seat.table.name, orders: rows.map((o) => ({ id: o.id, seq: o.seq, table: o.table_name, mine: o.client_id === clientId,
-      lines: parseJSON(o.items, []), total: o.total, status: o.status, createdAt: o.created_at })) });
+      lines: parseJSON(o.items, []), total: o.total, status: o.status, createdAt: o.created_at })), reminders: remindersFor(seat.sess.id), cooldownMs: REMIND_COOLDOWN, now: Date.now() });
   }
 
   // ----- staff API -----
@@ -324,8 +406,12 @@ async function handle(req, res) {
     if (limited('l:' + ip, 10, 10 * 60e3)) return send(res, 429, { error: 'TOO_MANY' });
     const body = await readBody(req).catch(() => null);
     const pin = String(body?.pin || '');
-    const ok = pin.length === STAFF_PIN.length && crypto.timingSafeEqual(Buffer.from(pin), Buffer.from(STAFF_PIN));
-    return ok ? send(res, 200, { ok: true }, { 'Set-Cookie': staffCookie() }) : send(res, 401, { error: 'BAD_PIN' });
+    if (body?.role === 'admin') return pinOk(pin, ADMIN_PIN) ? send(res, 200, { ok: true }, { 'Set-Cookie': staffCookie('admin') }) : send(res, 401, { error: 'BAD_PIN' });
+    return pinOk(pin, STAFF_PIN) || pinOk(pin, ADMIN_PIN) ? send(res, 200, { ok: true }, { 'Set-Cookie': staffCookie() }) : send(res, 401, { error: 'BAD_PIN' });
+  }
+  if (p.startsWith('/api/admin/')) {
+    if (!isAdmin(req)) return send(res, 401, { error: 'LOGIN' });
+    return adminApi(req, res, p, url);
   }
   if (p.startsWith('/api/staff/')) {
     if (!isStaff(req)) return send(res, 401, { error: 'LOGIN' });
@@ -392,10 +478,138 @@ async function handle(req, res) {
   send(res, 404, 'Not found');
 }
 
+// ---------- back office (admin) API ----------
+const THEMES = ['default', 'cny', 'merdeka', 'raya', 'deepavali', 'gawai', 'christmas'];
+const clean3 = (o, max = 80) => { const r = {}; for (const k of ['en', 'ms', 'zh']) { const v = String(o?.[k] ?? '').trim().slice(0, max); if (v) r[k] = v; } return r; };
+const toSen = (rm) => { const n = Math.round(Number(rm) * 100); return Number.isFinite(n) && n >= 0 && n <= 1e7 ? n : null; };
+const slug = () => crypto.randomBytes(4).toString('hex');
+// Option groups as edited in the back office -> safe stored shape (ids kept stable so old carts still match).
+function cleanOptions(groups) {
+  if (!Array.isArray(groups)) return [];
+  return groups.slice(0, 12).map((g) => ({
+    id: /^[\w-]{1,24}$/.test(g?.id || '') ? g.id : slug(), name: clean3(g?.name), type: g?.type === 'multi' ? 'multi' : 'single', required: !!g?.required,
+    choices: (Array.isArray(g?.choices) ? g.choices : []).slice(0, 20).map((c) => ({
+      id: /^[\w-]{1,24}$/.test(c?.id || '') ? c.id : slug(), name: clean3(c?.name), ...(Number(c?.price) > 0 ? { price: Math.round(Number(c.price) * 100) / 100 } : {}),
+    })).filter((c) => Object.keys(c.name).length),
+  })).filter((g) => Object.keys(g.name).length && g.choices.length);
+}
+const adminItem = (i) => ({ id: i.id, categoryId: i.category_id, name: parseJSON(i.name, {}), description: parseJSON(i.description, {}), price: i.price,
+  image: i.image, options: parseJSON(i.options, []), listed: !!i.listed, soldOut: i.sold_out ? 'until' : i.sold_out_day === today() ? 'today' : 'none',
+  stock: i.stock, cookMinutes: i.cook_minutes || 15, sort: i.sort, held: i.stock == null ? 0 : heldByOthers(i.id, '') });
+
+async function adminApi(req, res, p, url) {
+  const body = req.method === 'GET' ? null : await readBody(req, 6 * 1024 * 1024).catch(() => null);
+  let m;
+  if (p === '/api/admin/menu' && req.method === 'GET') {
+    const cats = db.prepare('SELECT * FROM categories ORDER BY sort, id').all();
+    const items = db.prepare('SELECT * FROM items ORDER BY sort, id').all();
+    return send(res, 200, { categories: cats.map((c) => ({ id: c.id, name: parseJSON(c.name, {}), items: items.filter((i) => i.category_id === c.id).map(adminItem) })) });
+  }
+  // categories
+  if (p === '/api/admin/categories' && req.method === 'POST') {
+    const name = clean3(body?.name); if (!Object.keys(name).length) return send(res, 400, { error: 'NAME' });
+    const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM categories').get().n;
+    const r = db.prepare('INSERT INTO categories (name, sort) VALUES (?, ?)').run(JSON.stringify(name), sort);
+    return send(res, 201, { id: Number(r.lastInsertRowid) });
+  }
+  if ((m = /^\/api\/admin\/categories\/(\d+)$/.exec(p))) {
+    const id = Number(m[1]);
+    if (req.method === 'PUT') { const name = clean3(body?.name); if (!Object.keys(name).length) return send(res, 400, { error: 'NAME' });
+      db.prepare('UPDATE categories SET name = ? WHERE id = ?').run(JSON.stringify(name), id); return send(res, 200, { ok: true }); }
+    if (req.method === 'DELETE') {
+      if (db.prepare('SELECT COUNT(*) AS n FROM items WHERE category_id = ?').get(id).n) return send(res, 409, { error: 'NOT_EMPTY' });
+      db.prepare('DELETE FROM categories WHERE id = ?').run(id); return send(res, 200, { ok: true });
+    }
+  }
+  if (p === '/api/admin/categories/order' && req.method === 'POST') {
+    (body?.ids || []).forEach((id, i) => db.prepare('UPDATE categories SET sort = ? WHERE id = ?').run(i, Number(id)));
+    return send(res, 200, { ok: true });
+  }
+  if (p === '/api/admin/items/order' && req.method === 'POST') {
+    (body?.ids || []).forEach((id, i) => db.prepare('UPDATE items SET sort = ? WHERE id = ?').run(i, Number(id)));
+    return send(res, 200, { ok: true });
+  }
+  // dishes: create / full update
+  if ((p === '/api/admin/items' && req.method === 'POST') || ((m = /^\/api\/admin\/items\/(\d+)$/.exec(p)) && req.method === 'PUT')) {
+    const name = clean3(body?.name), price = toSen(body?.price), cat = Number(body?.categoryId);
+    if (!Object.keys(name).length) return send(res, 400, { error: 'NAME' });
+    if (price == null) return send(res, 400, { error: 'PRICE' });
+    if (!db.prepare('SELECT id FROM categories WHERE id = ?').get(cat)) return send(res, 400, { error: 'CATEGORY' });
+    const image = /^\/uploads\/[\w-]+\.(jpg|png|webp)$/.test(body?.image || '') ? body.image : null;
+    const cook = Math.min(240, Math.max(1, Math.round(Number(body?.cookMinutes) || 15)));
+    const vals = [cat, JSON.stringify(name), JSON.stringify(clean3(body?.description, 300)), price, image, JSON.stringify(cleanOptions(body?.options)), body?.listed === false ? 0 : 1, cook];
+    if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ? WHERE id = ?').run(...vals, Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
+    const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM items WHERE category_id = ?').get(cat).n;
+    const r = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, listed, cook_minutes, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...vals, sort);
+    return send(res, 201, { id: Number(r.lastInsertRowid) });
+  }
+  if ((m = /^\/api\/admin\/items\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
+    db.prepare('DELETE FROM items WHERE id = ?').run(Number(m[1])); db.prepare('DELETE FROM holds WHERE item_id = ?').run(Number(m[1]));
+    return send(res, 200, { ok: true });
+  }
+  // quick changes from the list: listed, sold out mode, remaining portions, price
+  if ((m = /^\/api\/admin\/items\/(\d+)\/quick$/.exec(p)) && req.method === 'POST') {
+    const id = Number(m[1]);
+    if (!db.prepare('SELECT id FROM items WHERE id = ?').get(id)) return send(res, 404, { error: 'NOT_FOUND' });
+    if ('listed' in body) db.prepare('UPDATE items SET listed = ? WHERE id = ?').run(body.listed ? 1 : 0, id);
+    if ('soldOut' in body) {
+      const mode = body.soldOut;
+      db.prepare('UPDATE items SET sold_out = ?, sold_out_day = ? WHERE id = ?').run(mode === 'until' ? 1 : 0, mode === 'today' ? today() : null, id);
+      if (mode === 'none') db.prepare('UPDATE items SET stock = NULL WHERE id = ? AND stock <= 0').run(id); // back on sale: drop an empty limit
+    }
+    if ('stock' in body) {
+      const st = body.stock === null || body.stock === '' ? null : Math.max(0, Math.min(9999, Math.floor(Number(body.stock))));
+      if (st !== null && !Number.isFinite(st)) return send(res, 400, { error: 'STOCK' });
+      db.prepare('UPDATE items SET stock = ? WHERE id = ?').run(st, id);
+    }
+    if ('price' in body) { const pr = toSen(body.price); if (pr == null) return send(res, 400, { error: 'PRICE' }); db.prepare('UPDATE items SET price = ? WHERE id = ?').run(pr, id); }
+    return send(res, 200, { item: adminItem(db.prepare('SELECT * FROM items WHERE id = ?').get(id)) });
+  }
+  // photo upload: the browser already resized it; we just store the bytes
+  if (p === '/api/admin/upload' && req.method === 'POST') {
+    const mm = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(body?.dataUrl || ''));
+    if (!mm) return send(res, 400, { error: 'IMAGE' });
+    const buf = Buffer.from(mm[2], 'base64'); if (buf.length > 4 * 1024 * 1024) return send(res, 413, { error: 'TOO_LARGE' });
+    const name = `${Date.now().toString(36)}-${slug()}.${mm[1] === 'jpeg' ? 'jpg' : mm[1]}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, name), buf);
+    return send(res, 201, { url: '/uploads/' + name });
+  }
+  // tables
+  if (p === '/api/admin/tables' && req.method === 'GET') return send(res, 200, { tables: db.prepare('SELECT id, name, token, active FROM tables ORDER BY sort, id').all() });
+  if (p === '/api/admin/tables' && req.method === 'POST') {
+    const name = String(body?.name || '').trim().slice(0, 20); if (!name) return send(res, 400, { error: 'NAME' });
+    if (db.prepare('SELECT id FROM tables WHERE name = ?').get(name)) return send(res, 409, { error: 'EXISTS' });
+    const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM tables').get().n;
+    db.prepare('INSERT INTO tables (name, token, sort) VALUES (?, ?, ?)').run(name, newToken(), sort);
+    return send(res, 201, { ok: true });
+  }
+  if ((m = /^\/api\/admin\/tables\/(\d+)$/.exec(p)) && req.method === 'PUT') {
+    const id = Number(m[1]);
+    if ('name' in body) { const name = String(body.name || '').trim().slice(0, 20); if (!name) return send(res, 400, { error: 'NAME' });
+      if (db.prepare('SELECT id FROM tables WHERE name = ? AND id != ?').get(name, id)) return send(res, 409, { error: 'EXISTS' });
+      db.prepare('UPDATE tables SET name = ? WHERE id = ?').run(name, id); }
+    if ('active' in body) db.prepare('UPDATE tables SET active = ? WHERE id = ?').run(body.active ? 1 : 0, id);
+    return send(res, 200, { ok: true });
+  }
+  if ((m = /^\/api\/admin\/tables\/(\d+)\/regen$/.exec(p)) && req.method === 'POST') {
+    const id = Number(m[1]);
+    db.prepare('UPDATE tables SET token = ? WHERE id = ?').run(newToken(), id);
+    db.prepare('SELECT id FROM table_sessions WHERE table_id = ? AND closed_at IS NULL').all(id).forEach((s) => closeSession(s.id, 'regen')); // old QR stops working
+    return send(res, 200, { ok: true });
+  }
+  // festival theme for the guest page
+  if (p === '/api/admin/theme') {
+    if (req.method === 'POST') { if (!THEMES.includes(body?.theme)) return send(res, 400, { error: 'THEME' }); setSetting('theme', body.theme); }
+    return send(res, 200, { theme: getSetting('theme', 'default'), themes: THEMES });
+  }
+  return send(res, 404, { error: 'NOT_FOUND' });
+}
+
 http.createServer((req, res) => {
   handle(req, res).catch((e) => { console.error(e); if (!res.headersSent) send(res, 500, { error: 'SERVER' }); });
 }).listen(PORT, () => {
   console.log(`Ordering server on http://localhost:${PORT}  (staff: /staff, QR codes: /staff/qr)`);
   if (lanUrl()) console.log(`Phones on the same Wi-Fi: ${lanUrl()}`);
+  console.log(`Back office: http://localhost:${PORT}/admin`);
   if (STAFF_PIN === '1234' && !DEMO) console.log('WARNING: using default staff PIN 1234 — set STAFF_PIN in production.');
 });

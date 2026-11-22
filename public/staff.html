@@ -130,6 +130,7 @@
   <div class="seg"><button id="tabLive" class="on">&nbsp;<span class="count" id="liveCount">0</span></button><button id="tabTables">桌台</button><button id="tabHist">历史订单</button></div>
   <button class="pill busy-pill" id="busyBtn"></button>
   <a class="pill" id="qrLink" href="/staff/qr" target="_blank" style="text-decoration:none"></a>
+  <a class="pill" id="adminLink" href="/admin" style="text-decoration:none"></a>
   <button class="pill" id="soundBtn"></button>
   <button class="pill" id="langBtn"></button>
   <span class="pill" id="connPill"><span class="dot" id="netDot"></span><span class="clock" id="clock"></span></span>
@@ -149,7 +150,7 @@ const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ==
 
 // ---------- i18n: the whole tablet UI and dish names follow one language ----------
 const S = {
-  zh: { title: '接单', pending: '待输入', tables: '桌台', history: '历史订单', qr: '二维码', soundOn: '声音：开', soundOff: '声音：关', conn: '连接状态',
+  zh: { admin: '管理后台', title: '接单', pending: '待输入', tables: '桌台', history: '历史订单', qr: '二维码', soundOn: '声音：开', soundOff: '声音：关', conn: '连接状态',
     busy0: '出餐：正常', busy1: '出餐：忙碌', busy2: '出餐：非常忙碌', busySet0: '已恢复正常出餐，顾客端的等待提示已关闭。', busySet: '顾客端现在会提示：出餐可能多等约 {m} 分钟。',
     start: '开始接单', startSub: '请点一下开始。新订单或客人呼叫时平板会响铃，屏幕也会保持常亮。', login: '员工登录', loginSub: '请输入员工密码', tooMany: '尝试次数较多，请稍后再试', badPin: '密码不正确，请再试一次',
     newOrder: '新订单：{t} 号桌', newReq: '{t} 号桌需要服务', tbl: '桌', nOrders: '{n} 张单', justNow: '刚刚', minAgo: '{n} 分钟前', note: '备注', takeaway: '外带',
@@ -160,7 +161,7 @@ const S = {
     min: '{n} 分钟', hm: '{h} 小时 {m} 分', tableN: '{t} 号桌', diningFor: '用餐 {d}', close: '关闭', noOrderYet: '客人已扫码，还没有下单。', idleTable: '这张桌子目前空闲，客人扫码后会自动开台。',
     clear: '清台（客人已结账离开）', clearConfirm: '确定为 {t} 号桌清台吗？', clearWarn: '提醒：还有 {n} 张单没有输入收银机。', cleared: '{t} 号桌已清台', entered: '已输入',
     call: '呼叫服务员', remind: '催菜', rwater: '需要加水', rcutlery: '需要餐具或纸巾', rsauce: '需要酱料或辣椒', rother: '客人请服务员过去', handled: '已处理', orderedAgo: '下单 {n} 分钟', reqTitle: '客人服务提醒' },
-  en: { title: 'Orders', pending: 'To enter', tables: 'Tables', history: 'History', qr: 'QR codes', soundOn: 'Sound: on', soundOff: 'Sound: off', conn: 'Connection',
+  en: { admin: 'Back office', title: 'Orders', pending: 'To enter', tables: 'Tables', history: 'History', qr: 'QR codes', soundOn: 'Sound: on', soundOff: 'Sound: off', conn: 'Connection',
     busy0: 'Kitchen: normal', busy1: 'Kitchen: busy', busy2: 'Kitchen: very busy', busySet0: 'Back to normal. The waiting notice for guests is now off.', busySet: 'Guests will now see: food may take about {m} minutes longer.',
     start: 'Start taking orders', startSub: 'Please tap to start. The tablet will ring for new orders and guest requests, and the screen will stay on.', login: 'Staff login', loginSub: 'Please enter the staff PIN', tooMany: 'Too many attempts. Please try again shortly.', badPin: 'Incorrect PIN, please try again',
     newOrder: 'New order: table {t}', newReq: 'Table {t} needs assistance', tbl: 'Table', nOrders: '{n} orders', justNow: 'just now', minAgo: '{n} min ago', note: 'Note', takeaway: 'Take away',
@@ -171,7 +172,7 @@ const S = {
     min: '{n} min', hm: '{h} h {m} min', tableN: 'Table {t}', diningFor: 'dining {d}', close: 'Close', noOrderYet: 'Guests have scanned but not ordered yet.', idleTable: 'This table is free. It opens automatically when guests scan.',
     clear: 'Clear table (guests have paid)', clearConfirm: 'Clear table {t}?', clearWarn: 'Note: {n} order(s) are not yet entered into the POS.', cleared: 'Table {t} cleared', entered: 'Entered',
     call: 'Call staff', remind: 'Food reminder', rwater: 'Water, please', rcutlery: 'Cutlery or tissues', rsauce: 'Extra sauce or chilli', rother: 'Please come to the table', handled: 'Handled', orderedAgo: 'ordered {n} min ago', reqTitle: 'Guest requests' },
-  ms: { title: 'Pesanan', pending: 'Untuk dimasukkan', tables: 'Meja', history: 'Sejarah', qr: 'Kod QR', soundOn: 'Bunyi: hidup', soundOff: 'Bunyi: tutup', conn: 'Sambungan',
+  ms: { admin: 'Pentadbir', title: 'Pesanan', pending: 'Untuk dimasukkan', tables: 'Meja', history: 'Sejarah', qr: 'Kod QR', soundOn: 'Bunyi: hidup', soundOff: 'Bunyi: tutup', conn: 'Sambungan',
     busy0: 'Dapur: biasa', busy1: 'Dapur: sibuk', busy2: 'Dapur: sangat sibuk', busySet0: 'Kembali biasa. Notis menunggu untuk pelanggan telah ditutup.', busySet: 'Pelanggan kini akan melihat: makanan mungkin lambat kira-kira {m} minit.',
     start: 'Mula terima pesanan', startSub: 'Sila tekan untuk mula. Tablet akan berbunyi untuk pesanan baharu dan permintaan pelanggan, dan skrin akan kekal hidup.', login: 'Log masuk kakitangan', loginSub: 'Sila masukkan PIN kakitangan', tooMany: 'Terlalu banyak cubaan. Sila cuba sebentar lagi.', badPin: 'PIN tidak betul, sila cuba lagi',
     newOrder: 'Pesanan baharu: meja {t}', newReq: 'Meja {t} memerlukan bantuan', tbl: 'Meja', nOrders: '{n} pesanan', justNow: 'baru tadi', minAgo: '{n} minit lalu', note: 'Nota', takeaway: 'Bungkus',
@@ -210,7 +211,7 @@ function applyLabels() {
   $('title').textContent = (restaurantName ? restaurantName + ' · ' : '') + tr('title');
   $('tabLive').firstChild.textContent = tr('pending') + ' ';
   $('tabTables').textContent = tr('tables'); $('tabHist').textContent = tr('history');
-  $('qrLink').textContent = tr('qr'); $('langBtn').textContent = LANG_LABEL[lang];
+  $('qrLink').textContent = tr('qr'); $('adminLink').textContent = tr('admin'); $('langBtn').textContent = LANG_LABEL[lang];
   $('connPill').title = tr('conn'); $('toastBtn').textContent = tr('undo');
   renderSoundBtn(); renderBusyBtn(); renderRequests();
 }
