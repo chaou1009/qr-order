@@ -19,7 +19,7 @@
 
 ## Windows 一键试用
 
-双击 `start-demo.bat`（文件夹里自带 `runtime\node.exe`，不用安装任何东西）。浏览器会自动打开试用说明页，员工密码 8888。
+双击 `start-demo.bat`。需要 `runtime\node.exe`：打包好的 Demo 压缩包里已自带；从 GitHub 下载代码的话，请把 [Node.js 22 Windows 版](https://nodejs.org/dist/latest-v22.x/) 压缩包里的 `node.exe` 放进 `runtime` 文件夹。浏览器会自动打开试用说明页，员工密码 8888。
 第一次运行时 Windows 防火墙可能弹窗，请点"允许"，这样同一 WiFi 下的手机才能连进来。
 
 ## 本地试用（命令行）
