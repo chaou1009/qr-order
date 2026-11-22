@@ -1,0 +1,19 @@
+# One-command deploy on a small VPS: edit the 3 values marked CHANGE, then `docker compose up -d`.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      RESTAURANT_NAME: "My Restaurant"   # CHANGE: shown to customers
+      STAFF_PIN: "1234"                  # CHANGE: tablet login PIN (4-8 digits)
+    volumes:
+      - ./data:/data
+  caddy:                                 # gives free automatic HTTPS
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from order.example.com --to app:3000   # CHANGE: your domain
+    volumes:
+      - caddy_data:/data
+volumes:
+  caddy_data:

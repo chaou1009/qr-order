@@ -1,0 +1,127 @@
+{
+  "_note": "Sample menu loaded only on first start (empty database). Prices in RM. Replace via the admin page in phase 2.",
+  "categories": [
+    {
+      "name": { "en": "Rice & Noodles", "ms": "Nasi & Mi", "zh": "饭面类" },
+      "items": [
+        {
+          "name": { "en": "Nasi Lemak Ayam Goreng", "ms": "Nasi Lemak Ayam Goreng", "zh": "椰浆饭炸鸡" },
+          "description": { "en": "Coconut rice, fried chicken, sambal, egg, peanuts", "ms": "Nasi santan, ayam goreng, sambal, telur, kacang", "zh": "椰浆饭配炸鸡、参巴、蛋、花生" },
+          "price": 12.9,
+          "options": [
+            { "id": "spice", "name": { "en": "Spice level", "ms": "Tahap pedas", "zh": "辣度" }, "type": "single", "required": true,
+              "choices": [
+                { "id": "mild", "name": { "en": "Mild", "ms": "Kurang pedas", "zh": "小辣" } },
+                { "id": "normal", "name": { "en": "Normal", "ms": "Biasa", "zh": "正常" } },
+                { "id": "extra", "name": { "en": "Extra spicy", "ms": "Extra pedas", "zh": "大辣" } }
+              ] },
+            { "id": "addon", "name": { "en": "Add-ons", "ms": "Tambahan", "zh": "加料" }, "type": "multi",
+              "choices": [
+                { "id": "egg", "name": { "en": "Extra egg", "ms": "Telur tambahan", "zh": "加蛋" }, "price": 1.5 },
+                { "id": "rice", "name": { "en": "Extra rice", "ms": "Nasi tambahan", "zh": "加饭" }, "price": 2 }
+              ] }
+          ]
+        },
+        {
+          "name": { "en": "Char Kuey Teow", "ms": "Char Kuey Teow", "zh": "炒粿条" },
+          "description": { "en": "Wok-fried flat noodles with prawns and cockles", "ms": "Kuey teow goreng dengan udang dan kerang", "zh": "鲜虾血蚶炒粿条" },
+          "price": 13.5,
+          "options": [
+            { "id": "spice", "name": { "en": "Spice level", "ms": "Tahap pedas", "zh": "辣度" }, "type": "single", "required": true,
+              "choices": [
+                { "id": "none", "name": { "en": "Not spicy", "ms": "Tak pedas", "zh": "不辣" } },
+                { "id": "mild", "name": { "en": "Mild", "ms": "Kurang pedas", "zh": "小辣" } },
+                { "id": "normal", "name": { "en": "Normal", "ms": "Biasa", "zh": "正常" } }
+              ] },
+            { "id": "remove", "name": { "en": "Remove", "ms": "Tanpa", "zh": "去掉" }, "type": "multi",
+              "choices": [
+                { "id": "cockles", "name": { "en": "No cockles", "ms": "Tanpa kerang", "zh": "不要血蚶" } },
+                { "id": "spring", "name": { "en": "No spring onion", "ms": "Tanpa daun bawang", "zh": "去葱" } }
+              ] }
+          ]
+        },
+        {
+          "name": { "en": "Hokkien Prawn Mee", "ms": "Mi Udang Hokkien", "zh": "福建虾面" },
+          "description": { "en": "Rich prawn broth noodles", "ms": "Mi kuah udang pekat", "zh": "浓郁虾汤面" },
+          "price": 14,
+          "options": [
+            { "id": "noodle", "name": { "en": "Noodle", "ms": "Jenis mi", "zh": "面类" }, "type": "single", "required": true,
+              "choices": [
+                { "id": "yellow", "name": { "en": "Yellow mee", "ms": "Mi kuning", "zh": "黄面" } },
+                { "id": "bihun", "name": { "en": "Bihun", "ms": "Bihun", "zh": "米粉" } },
+                { "id": "mix", "name": { "en": "Mixed", "ms": "Campur", "zh": "黄面+米粉" } }
+              ] }
+          ]
+        },
+        {
+          "name": { "en": "Claypot Chicken Rice", "ms": "Nasi Ayam Claypot", "zh": "瓦煲鸡饭" },
+          "description": { "en": "Takes about 20 minutes", "ms": "Mengambil masa kira-kira 20 minit", "zh": "约需20分钟" },
+          "price": 16.9,
+          "sold_out": true
+        }
+      ]
+    },
+    {
+      "name": { "en": "Dishes", "ms": "Lauk", "zh": "小炒" },
+      "items": [
+        {
+          "name": { "en": "Kangkung Belacan", "ms": "Kangkung Belacan", "zh": "马来风光" },
+          "description": { "en": "Water spinach stir-fried with shrimp paste", "ms": "Kangkung goreng belacan", "zh": "峇拉煎炒空心菜" },
+          "price": 10,
+          "options": [
+            { "id": "size", "name": { "en": "Size", "ms": "Saiz", "zh": "份量" }, "type": "single", "required": true,
+              "choices": [
+                { "id": "s", "name": { "en": "Small", "ms": "Kecil", "zh": "小" } },
+                { "id": "m", "name": { "en": "Medium", "ms": "Sederhana", "zh": "中" }, "price": 4 },
+                { "id": "l", "name": { "en": "Large", "ms": "Besar", "zh": "大" }, "price": 8 }
+              ] }
+          ]
+        },
+        {
+          "name": { "en": "Sweet & Sour Pork", "ms": "Babi Masam Manis", "zh": "咕噜肉" },
+          "price": 18
+        },
+        {
+          "name": { "en": "Salted Egg Squid", "ms": "Sotong Telur Masin", "zh": "咸蛋苏东" },
+          "price": 22
+        }
+      ]
+    },
+    {
+      "name": { "en": "Drinks", "ms": "Minuman", "zh": "饮料" },
+      "items": [
+        {
+          "name": { "en": "Teh Tarik", "ms": "Teh Tarik", "zh": "拉茶" },
+          "price": 3.5,
+          "options": [
+            { "id": "temp", "name": { "en": "Hot / Iced", "ms": "Panas / Ais", "zh": "冷热" }, "type": "single", "required": true,
+              "choices": [
+                { "id": "hot", "name": { "en": "Hot", "ms": "Panas", "zh": "热" } },
+                { "id": "iced", "name": { "en": "Iced", "ms": "Ais", "zh": "冰" }, "price": 0.5 }
+              ] },
+            { "id": "sugar", "name": { "en": "Sugar", "ms": "Gula", "zh": "甜度" }, "type": "single",
+              "choices": [
+                { "id": "less", "name": { "en": "Less sugar", "ms": "Kurang manis", "zh": "少甜" } },
+                { "id": "none", "name": { "en": "No sugar", "ms": "Tanpa gula", "zh": "无糖" } }
+              ] }
+          ]
+        },
+        {
+          "name": { "en": "Kopi O", "ms": "Kopi O", "zh": "咖啡乌" },
+          "price": 2.8,
+          "options": [
+            { "id": "temp", "name": { "en": "Hot / Iced", "ms": "Panas / Ais", "zh": "冷热" }, "type": "single", "required": true,
+              "choices": [
+                { "id": "hot", "name": { "en": "Hot", "ms": "Panas", "zh": "热" } },
+                { "id": "iced", "name": { "en": "Iced", "ms": "Ais", "zh": "冰" }, "price": 0.5 }
+              ] }
+          ]
+        },
+        {
+          "name": { "en": "Lime Juice", "ms": "Jus Limau", "zh": "酸柑水" },
+          "price": 4.5
+        }
+      ]
+    }
+  ]
+}

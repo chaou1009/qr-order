@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Menu</title>
+<link rel="stylesheet" href="/app.css">
+<style>
+  body { background: var(--bg); padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+  /* ---------- header ---------- */
+  .hero { background: var(--surface); padding: 18px 16px 14px; }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .logo { width: 44px; height: 44px; border-radius: 14px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
+  .brand h1 { font-size: 18px; margin: 0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .table-pill { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); padding: 2px 10px; border-radius: 999px; }
+  .hero-actions { display: flex; gap: 8px; flex: none; }
+  .icon-btn { height: 38px; min-width: 38px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .notice { margin-top: 12px; font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+
+  /* ---------- category tabs ---------- */
+  .tabs { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .tabs-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; scrollbar-width: none; }
+  .tabs-scroll::-webkit-scrollbar { display: none; }
+  .tab { flex: none; border: 0; background: var(--chip); color: var(--ink-2); font-weight: 600; font-size: 14px; padding: 8px 14px; border-radius: 999px; transition: background .15s, color .15s; }
+  .tab.active { background: var(--ink); color: var(--surface); }
+
+  /* ---------- menu ---------- */
+  .section { padding: 18px 16px 4px; scroll-margin-top: 58px; }
+  .section h2 { font-size: 17px; margin: 0 0 6px; }
+  .item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .item:last-child { border-bottom: 0; }
+  .item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .item-name { font-weight: 700; font-size: 15px; line-height: 1.3; }
+  .item-desc { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .item-price { margin-top: auto; padding-top: 8px; font-weight: 700; font-size: 15px; }
+  .item-media { position: relative; width: 104px; height: 104px; flex: none; }
+  .thumb { width: 100%; height: 100%; border-radius: 14px; object-fit: cover; background: var(--chip); display: grid; place-items: center; color: var(--muted-2); }
+  .thumb svg { width: 40px; height: 40px; }
+  .add-btn { position: absolute; right: -6px; bottom: -6px; width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--bg); background: var(--accent); color: #fff; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+  .add-btn svg { width: 18px; height: 18px; }
+  .qty-badge { position: absolute; left: -6px; top: -6px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 12px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--bg); }
+  .item.soldout { cursor: default; }
+  .item.soldout .item-name, .item.soldout .item-price, .item.soldout .item-desc { color: var(--muted-2); }
+  .item.soldout .thumb { filter: grayscale(1); opacity: .55; }
+  .soldout-tag { position: absolute; inset: auto 0 8px 0; margin: auto; width: max-content; background: rgba(20,20,20,.78); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .footer-space { text-align: center; color: var(--muted-2); font-size: 12px; padding: 24px 16px; }
+
+  /* ---------- cart bar ---------- */
+  .cartbar { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 30; max-width: 640px; margin: 0 auto;
+    display: flex; align-items: center; gap: 12px; background: var(--ink); color: var(--surface); border-radius: 18px; padding: 10px 10px 10px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    transform: translateY(140%); transition: transform .25s cubic-bezier(.2,.8,.2,1); border: 0; width: auto; text-align: left; }
+  .cartbar.show { transform: none; }
+  .bag { position: relative; width: 28px; height: 28px; }
+  .bag svg { width: 28px; height: 28px; }
+  .bag b { position: absolute; top: -6px; right: -8px; background: var(--accent); color: #fff; font-size: 11px; min-width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; padding: 0 5px; }
+  .cartbar .total { flex: 1; font-weight: 800; font-size: 17px; }
+  .cartbar .go { background: var(--accent); color: #fff; font-weight: 700; padding: 11px 18px; border-radius: 12px; font-size: 15px; }
+  .bump { animation: bump .35s; }
+  @keyframes bump { 40% { transform: scale(1.18); } }
+
+  /* ---------- sheets ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 40; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; max-width: 640px; margin: 0 auto; background: var(--surface); border-radius: 22px 22px 0 0;
+    max-height: 92vh; max-height: 92dvh; display: flex; flex-direction: column; transform: translateY(105%); transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+  .sheet.show { transform: none; }
+  .sheet-body { overflow-y: auto; overscroll-behavior: contain; flex: 1; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 8px; }
+  .sheet-head h3 { margin: 0; font-size: 18px; }
+  .close { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--chip); display: grid; place-items: center; color: var(--ink); }
+  .close svg { width: 18px; height: 18px; }
+  .sheet-foot { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: center; background: var(--surface); }
+  .grip { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 8px auto 0; }
+
+  /* item detail */
+  .detail-img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: var(--chip); }
+  .detail-ph { width: 100%; aspect-ratio: 16/7; display: grid; place-items: center; background: var(--chip); color: var(--muted-2); }
+  .detail-ph svg { width: 56px; height: 56px; }
+  .detail-close { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,.92); box-shadow: 0 1px 4px rgba(0,0,0,.15); z-index: 2; }
+  .detail-main { padding: 16px; }
+  .detail-main h3 { margin: 0; font-size: 20px; }
+  .detail-main p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .detail-main .price { margin-top: 10px; font-weight: 800; font-size: 18px; }
+  .group { border-top: 8px solid var(--bg); padding: 14px 16px 6px; }
+  .group-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .group-head b { font-size: 16px; }
+  .badge { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+  .badge.req { background: var(--accent-soft); color: var(--accent-ink); }
+  .badge.req.ok { background: #e6f4ea; color: #1e7a3c; }
+  .choice { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; cursor: pointer; }
+  .choice:last-child { border-bottom: 0; }
+  .choice .txt { flex: 1; }
+  .choice em { font-style: normal; color: var(--muted); font-size: 14px; }
+  .choice input { position: absolute; opacity: 0; pointer-events: none; }
+  .mark { width: 22px; height: 22px; border: 2px solid var(--muted-2); border-radius: 50%; flex: none; display: grid; place-items: center; transition: all .15s; }
+  .mark.box { border-radius: 6px; }
+  .choice input:checked + .mark { border-color: var(--accent); background: var(--accent); }
+  .choice input:checked + .mark::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
+  .note-wrap { border-top: 8px solid var(--bg); padding: 14px 16px 18px; }
+  .note-wrap b { font-size: 16px; display: block; margin-bottom: 8px; }
+  textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 15px; resize: none; background: var(--bg); color: var(--ink); }
+  textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .stepper { display: flex; align-items: center; gap: 2px; background: var(--chip); border-radius: 999px; padding: 3px; flex: none; }
+  .stepper button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); display: grid; place-items: center; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .stepper button:disabled { opacity: .4; }
+  .stepper button svg { width: 16px; height: 16px; }
+  .stepper span { min-width: 30px; text-align: center; font-weight: 700; }
+  .stepper.sm button { width: 28px; height: 28px; }
+  .stepper.sm span { min-width: 24px; font-size: 14px; }
+  .primary { flex: 1; border: 0; background: var(--accent); color: #fff; font-weight: 700; font-size: 16px; padding: 14px 16px; border-radius: 14px; display: flex; justify-content: space-between; gap: 8px; }
+  .primary.center { justify-content: center; }
+  .primary:disabled { background: var(--muted-2); }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
+
+  /* cart */
+  .cart-line { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .cart-line .info { flex: 1; min-width: 0; }
+  .cart-line .nm { font-weight: 700; }
+  .cart-line .opts { font-size: 13px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .cart-line .nt { font-size: 13px; color: var(--accent-ink); margin-top: 3px; }
+  .cart-line .pr { font-weight: 700; margin-top: 6px; }
+  .summary { padding: 14px 16px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; }
+  .pay-hint { margin: 0 16px 16px; padding: 10px 12px; border-radius: 12px; background: var(--bg); color: var(--muted); font-size: 13px; display: flex; gap: 8px; align-items: center; }
+  .pay-hint svg { width: 18px; height: 18px; flex: none; }
+  .link-btn { border: 0; background: none; color: var(--muted); font-size: 14px; font-weight: 600; padding: 8px; }
+  .empty { padding: 40px 16px; text-align: center; color: var(--muted); }
+
+  /* success */
+  .success { position: fixed; inset: 0; z-index: 60; background: var(--surface); display: none; flex-direction: column; align-items: center; overflow-y: auto; padding: 48px 20px calc(24px + env(safe-area-inset-bottom)); }
+  .success.show { display: flex; }
+  .tick { width: 84px; height: 84px; border-radius: 50%; background: #e6f4ea; display: grid; place-items: center; animation: pop .45s cubic-bezier(.2,1.4,.4,1); }
+  .tick svg { width: 44px; height: 44px; color: #1e9e4a; stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw .4s .25s forwards; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .success h2 { font-size: 24px; margin: 20px 0 6px; text-align: center; }
+  .success .sub { color: var(--muted); text-align: center; margin: 0; }
+  .pay-card { width: 100%; max-width: 420px; margin: 22px 0; border-radius: 18px; background: var(--accent-soft); color: var(--accent-ink); padding: 16px; display: flex; gap: 12px; align-items: center; font-weight: 600; }
+  .pay-card svg { width: 30px; height: 30px; flex: none; }
+  .receipt { width: 100%; max-width: 420px; border: 1px solid var(--line); border-radius: 18px; padding: 4px 16px; }
+  .receipt-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .receipt-row:last-child { border-bottom: 0; }
+  .receipt-row .o { color: var(--muted); font-size: 12px; }
+  .receipt-row.tot { font-weight: 800; font-size: 16px; }
+  .success-actions { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+  .ghost { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 700; font-size: 15px; padding: 13px; border-radius: 14px; }
+
+  /* history */
+  .hist { margin: 12px 16px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .hist-head { display: flex; justify-content: space-between; padding: 12px 14px; background: var(--bg); font-size: 14px; }
+  .hist-head b { font-size: 15px; }
+  .hist .receipt-row { padding: 10px 14px; }
+
+  /* language menu */
+  .lang-menu { position: absolute; right: 16px; top: 64px; z-index: 70; background: var(--surface); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 6px; display: none; min-width: 160px; }
+  .lang-menu.show { display: block; }
+  .lang-menu button { display: flex; width: 100%; justify-content: space-between; border: 0; background: none; padding: 11px 12px; border-radius: 10px; font-size: 15px; color: var(--ink); }
+  .lang-menu button.on { background: var(--chip); font-weight: 700; }
+
+  .toast { position: fixed; left: 50%; top: 16px; transform: translate(-50%, -150%); z-index: 90; background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; transition: transform .25s; max-width: calc(100% - 32px); text-align: center; }
+  .toast.show { transform: translate(-50%, 0); }
+  .fatal { padding: 80px 24px; text-align: center; }
+  .fatal h2 { margin: 16px 0 8px; }
+  .fatal p { color: var(--muted); }
+  .skeleton { padding: 16px; }
+  .sk { height: 104px; border-radius: 14px; background: linear-gradient(90deg, var(--chip) 0%, var(--line) 50%, var(--chip) 100%); background-size: 200% 100%; animation: sk 1.2s infinite; margin-bottom: 14px; }
+  @keyframes sk { to { background-position: -200% 0; } }
+  .wrap { max-width: 640px; margin: 0 auto; background: var(--surface); min-height: 100vh; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="skeleton"><div class="sk" style="height:60px"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<button class="cartbar" id="cartbar" type="button" aria-label="Cart">
+  <span class="bag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><b id="cartCount">0</b></span>
+  <span class="total" id="cartTotal">RM 0.00</span>
+  <span class="go" id="cartGo">View cart</span>
+</button>
+<div class="sheet" id="itemSheet" role="dialog" aria-modal="true"></div>
+<div class="sheet" id="cartSheet" role="dialog" aria-modal="true"></div>
+<div class="sheet" id="histSheet" role="dialog" aria-modal="true"></div>
+<div class="success" id="success"></div>
+<div class="lang-menu" id="langMenu"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ---------------- i18n ----------------
+const T = {
+  en: { table: 'Table', orders: 'My orders', viewCart: 'View cart', cart: 'Your order', add: 'Add to order', soldOut: 'Sold out',
+    required: 'Required', optional: 'Optional', pickOne: 'Pick 1', pickAny: 'Pick any', note: 'Special requests', notePh: 'e.g. no spring onion, less oil',
+    placeOrder: 'Place order', total: 'Total', placing: 'Sending…', emptyCart: 'Your cart is empty', clear: 'Clear all',
+    payHint: 'Payment at the counter after your meal', sent: 'Order sent!', sentSub: 'The kitchen has received your order.',
+    enjoy: 'Enjoy your meal! Please pay at the counter.', orderNo: 'Order', orderMore: 'Order more', viewOrders: 'View my orders',
+    noOrders: 'No orders yet from this phone.', histNote: 'Orders placed from this phone today', chooseRequired: 'Please choose',
+    badTable: 'This QR code is not valid', badTableSub: 'Please scan the QR code on your table again, or ask our staff for help.',
+    netErr: 'Network problem, please try again.', soldOutErr: 'Sorry, {x} just sold out. Please remove it from your order.',
+    unavailErr: 'Some items are no longer available. Please check your order.', tooMany: 'Too many orders. Please ask our staff.',
+    added: 'Added to order', items: 'items', addNote: 'Note', language: 'Language', edit: 'Edit',
+    noticeTxt: 'Order here · pay at the counter', confirmClear: 'Clear all items?' },
+  ms: { table: 'Meja', orders: 'Pesanan saya', viewCart: 'Lihat troli', cart: 'Pesanan anda', add: 'Tambah', soldOut: 'Habis dijual',
+    required: 'Wajib', optional: 'Pilihan', pickOne: 'Pilih 1', pickAny: 'Pilih mana-mana', note: 'Permintaan khas', notePh: 'cth. tanpa daun bawang, kurang minyak',
+    placeOrder: 'Hantar pesanan', total: 'Jumlah', placing: 'Menghantar…', emptyCart: 'Troli anda kosong', clear: 'Kosongkan',
+    payHint: 'Bayar di kaunter selepas makan', sent: 'Pesanan dihantar!', sentSub: 'Dapur telah menerima pesanan anda.',
+    enjoy: 'Selamat menjamu selera! Sila bayar di kaunter.', orderNo: 'Pesanan', orderMore: 'Pesan lagi', viewOrders: 'Lihat pesanan saya',
+    noOrders: 'Tiada pesanan dari telefon ini lagi.', histNote: 'Pesanan dari telefon ini hari ini', chooseRequired: 'Sila pilih',
+    badTable: 'Kod QR ini tidak sah', badTableSub: 'Sila imbas semula kod QR di meja anda, atau minta bantuan kakitangan kami.',
+    netErr: 'Masalah rangkaian, sila cuba lagi.', soldOutErr: 'Maaf, {x} baru sahaja habis. Sila buang dari pesanan.',
+    unavailErr: 'Sesetengah item tidak lagi tersedia. Sila semak pesanan anda.', tooMany: 'Terlalu banyak pesanan. Sila minta bantuan kakitangan.',
+    added: 'Ditambah', items: 'item', addNote: 'Nota', language: 'Bahasa', edit: 'Ubah',
+    noticeTxt: 'Pesan di sini · bayar di kaunter', confirmClear: 'Kosongkan semua item?' },
+  zh: { table: '桌号', orders: '我的订单', viewCart: '查看购物车', cart: '已选菜品', add: '加入订单', soldOut: '已售罄',
+    required: '必选', optional: '可选', pickOne: '单选', pickAny: '可多选', note: '备注', notePh: '例如：去葱、少油',
+    placeOrder: '确认下单', total: '合计', placing: '提交中…', emptyCart: '购物车是空的', clear: '清空',
+    payHint: '用餐后请到柜台付款', sent: '下单成功！', sentSub: '厨房已收到您的订单。',
+    enjoy: '祝您用餐愉快！请到柜台付款。', orderNo: '订单', orderMore: '继续点餐', viewOrders: '查看我的订单',
+    noOrders: '这台手机还没有下过订单。', histNote: '这台手机今天的订单', chooseRequired: '请选择',
+    badTable: '二维码无效', badTableSub: '请重新扫描桌上的二维码，或联系店员。',
+    netErr: '网络异常，请重试。', soldOutErr: '抱歉，{x} 刚刚售罄，请从订单中移除。',
+    unavailErr: '部分菜品已下架，请检查订单。', tooMany: '下单过于频繁，请联系店员。',
+    added: '已加入', items: '件', addNote: '备注', language: '语言', edit: '修改',
+    noticeTxt: '扫码点餐 · 柜台付款', confirmClear: '确定清空购物车？' },
+};
+const LANGS = [['en', 'English'], ['ms', 'Bahasa Melayu'], ['zh', '中文']];
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+                set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+let lang = store.get('lang', 'en'); if (!T[lang]) lang = 'en';
+const t = (k) => T[lang][k] || T.en[k] || k;
+const L = (o) => (o && (o[lang] || o.en || o.zh || o.ms || Object.values(o)[0])) || '';
+const rm = (sen) => 'RM ' + (sen / 100).toFixed(2);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (id) => document.getElementById(id);
+const ICON = {
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  dish: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h18M4.5 15a7.5 7.5 0 0 1 15 0"/><path d="M12 7.5V6M10.5 6h3M5 18h14"/></svg>',
+  receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></svg>',
+  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>',
+  counter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+};
+
+// ---------------- state ----------------
+const tableToken = location.pathname.split('/').pop();
+let clientId = store.get('clientId', null);
+if (!clientId) { clientId = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)); store.set('clientId', clientId); }
+const cartKey = 'cart:' + tableToken;
+let cart = store.get(cartKey, []); // [{key, itemId, qty, options:{gid:[cid]}, note}]
+let menu = [], itemsById = new Map(), table = null, config = { name: '' };
+let detail = null; // {item, qty, options, note, editKey}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), { status: r.status, data: j });
+  return j;
+}
+
+// ---------------- render: page ----------------
+function renderPage() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
+  document.title = config.name || 'Menu';
+  const initial = (config.name || 'R').trim().charAt(0).toUpperCase();
+  const tabs = menu.map((c, i) => `<button class="tab${i === 0 ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
+  const sections = menu.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2>${esc(L(c.name))}</h2>${c.items.map(itemRow).join('')}</section>`).join('');
+  $('app').innerHTML = `
+    <header class="hero">
+      <div class="hero-top">
+        <div class="brand"><div class="logo">${esc(initial)}</div>
+          <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>
+        <div class="hero-actions">
+          <button class="icon-btn" id="histBtn" aria-label="${esc(t('orders'))}">${ICON.receipt}</button>
+          <button class="icon-btn" id="langBtn" aria-label="${esc(t('language'))}">${ICON.globe}<span>${{ en: 'EN', ms: 'BM', zh: '中' }[lang]}</span></button>
+        </div>
+      </div>
+      <div class="notice">${ICON.counter.replace('<svg', '<svg width="16" height="16"')}<span>${esc(t('noticeTxt'))}</span></div>
+    </header>
+    <nav class="tabs"><div class="tabs-scroll" id="tabs">${tabs}</div></nav>
+    <main>${sections}</main>
+    <div class="footer-space">${esc(config.name)}</div>`;
+  $('histBtn').onclick = openHistory;
+  $('langBtn').onclick = (e) => { e.stopPropagation(); toggleLang(); };
+  $('tabs').onclick = (e) => { const b = e.target.closest('.tab'); if (!b) return; const s = $('cat-' + b.dataset.cat);
+    scrollLock = Date.now(); setActiveTab(b.dataset.cat); window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 56, behavior: 'smooth' }); };
+  document.querySelector('main').onclick = (e) => { const row = e.target.closest('.item'); if (!row || row.classList.contains('soldout')) return; openItem(Number(row.dataset.id)); };
+  renderCartBar();
+}
+function thumb(item, cls = 'thumb') {
+  return item.image ? `<img class="${cls}" src="${esc(item.image)}" alt="" loading="lazy">` : `<div class="${cls}">${ICON.dish}</div>`;
+}
+function itemRow(it) {
+  const inCart = cart.filter((l) => l.itemId === it.id).reduce((s, l) => s + l.qty, 0);
+  return `<div class="item${it.soldOut ? ' soldout' : ''}" data-id="${it.id}">
+    <div class="item-info"><div class="item-name">${esc(L(it.name))}</div>${L(it.description) ? `<div class="item-desc">${esc(L(it.description))}</div>` : ''}
+      <div class="item-price">${rm(it.price)}</div></div>
+    <div class="item-media">${thumb(it)}
+      ${it.soldOut ? `<span class="soldout-tag">${esc(t('soldOut'))}</span>` : `<span class="add-btn" aria-hidden="true">${ICON.plus}</span>`}
+      ${inCart ? `<span class="qty-badge">${inCart}</span>` : ''}</div></div>`;
+}
+
+// scroll-spy for category tabs
+let scrollLock = 0;
+function setActiveTab(id) {
+  document.querySelectorAll('.tab').forEach((b) => { const on = b.dataset.cat == id; b.classList.toggle('active', on);
+    if (on) b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); });
+}
+let lastSpy = null;
+addEventListener('scroll', () => {
+  if (Date.now() - scrollLock < 700) return;
+  let cur = null; document.querySelectorAll('.section').forEach((s) => { if (s.getBoundingClientRect().top < 120) cur = s.dataset.cat; });
+  if (!cur) cur = menu[0]?.id;
+  if (cur != lastSpy) { lastSpy = cur; setActiveTab(cur); }
+}, { passive: true });
+
+// ---------------- language ----------------
+function toggleLang() {
+  const m = $('langMenu');
+  m.innerHTML = LANGS.map(([k, n]) => `<button data-l="${k}" class="${k === lang ? 'on' : ''}">${n}${k === lang ? ' ✓' : ''}</button>`).join('');
+  m.classList.toggle('show');
+  m.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; lang = b.dataset.l; store.set('lang', lang); m.classList.remove('show'); renderPage(); };
+}
+document.addEventListener('click', (e) => { if (!e.target.closest('#langMenu')) $('langMenu').classList.remove('show'); });
+
+// ---------------- sheets ----------------
+let openSheet = null;
+function showSheet(el) { closeSheets(); openSheet = el; el.classList.add('show'); $('scrim').classList.add('show'); document.body.style.overflow = 'hidden'; }
+function closeSheets() { document.querySelectorAll('.sheet.show').forEach((s) => s.classList.remove('show')); $('scrim').classList.remove('show'); document.body.style.overflow = ''; openSheet = null; }
+$('scrim').onclick = closeSheets;
+
+// ---------------- item detail ----------------
+function openItem(id, editKey) {
+  const it = itemsById.get(id); if (!it || it.soldOut) return;
+  const existing = editKey ? cart.find((l) => l.key === editKey) : null;
+  const options = existing ? JSON.parse(JSON.stringify(existing.options)) : {};
+  if (!existing) it.options.forEach((g) => { if (g.type === 'single' && g.required && g.choices.length === 1) options[g.id] = [g.choices[0].id]; });
+  detail = { item: it, qty: existing ? existing.qty : 1, options, note: existing ? existing.note : '', editKey };
+  renderItem(); showSheet($('itemSheet'));
+}
+function unitPrice(it, options) {
+  let p = it.price; it.options.forEach((g) => (options[g.id] || []).forEach((cid) => { const c = g.choices.find((x) => x.id === cid); if (c && c.price) p += Math.round(c.price * 100); })); return p;
+}
+function missingGroups() { return detail.item.options.filter((g) => g.required && !(detail.options[g.id] || []).length); }
+function renderItem() {
+  const { item: it } = detail;
+  const groups = it.options.map((g) => {
+    const sel = detail.options[g.id] || [];
+    const req = g.required ? `<span class="badge req${sel.length ? ' ok' : ''}">${sel.length ? '✓ ' : ''}${esc(t('required'))}</span>` : `<span class="badge">${esc(t('optional'))}</span>`;
+    return `<div class="group" data-g="${esc(g.id)}"><div class="group-head"><div><b>${esc(L(g.name))}</b>
+        <div style="font-size:13px;color:var(--muted)">${esc(t(g.type === 'single' ? 'pickOne' : 'pickAny'))}</div></div>${req}</div>
+      ${g.choices.map((c) => `<label class="choice"><input type="${g.type === 'single' ? 'radio' : 'checkbox'}" name="g-${esc(g.id)}" value="${esc(c.id)}" ${sel.includes(c.id) ? 'checked' : ''}>
+        <span class="mark${g.type === 'single' ? '' : ' box'}"></span><span class="txt">${esc(L(c.name))}</span>${c.price ? `<em>+${rm(Math.round(c.price * 100))}</em>` : ''}</label>`).join('')}</div>`;
+  }).join('');
+  const total = unitPrice(it, detail.options) * detail.qty;
+  $('itemSheet').innerHTML = `
+    <div class="sheet-body" style="position:relative">
+      <button class="close detail-close" data-close>${ICON.close}</button>
+      ${it.image ? `<img class="detail-img" src="${esc(it.image)}" alt="">` : `<div class="detail-ph">${ICON.dish}</div>`}
+      <div class="detail-main"><h3>${esc(L(it.name))}</h3>${L(it.description) ? `<p>${esc(L(it.description))}</p>` : ''}<div class="price">${rm(it.price)}</div></div>
+      ${groups}
+      <div class="note-wrap"><b>${esc(t('note'))} <span class="badge">${esc(t('optional'))}</span></b>
+        <textarea id="noteInput" rows="2" maxlength="120" placeholder="${esc(t('notePh'))}">${esc(detail.note)}</textarea></div>
+    </div>
+    <div class="sheet-foot">
+      <div class="stepper"><button data-q="-1" ${detail.qty <= 1 ? 'disabled' : ''} aria-label="-">${ICON.minus}</button><span>${detail.qty}</span><button data-q="1" aria-label="+">${ICON.plus}</button></div>
+      <button class="primary" id="addBtn"><span>${esc(detail.editKey ? t('edit') : t('add'))}</span><span>${rm(total)}</span></button>
+    </div>`;
+  const sh = $('itemSheet');
+  sh.querySelector('[data-close]').onclick = closeSheets;
+  sh.querySelectorAll('.choice input').forEach((inp) => inp.onchange = () => {
+    const gid = inp.closest('.group').dataset.g; const g = it.options.find((x) => String(x.id) === gid);
+    if (g.type === 'single') detail.options[g.id] = [inp.value];
+    else detail.options[g.id] = [...sh.querySelectorAll(`.group[data-g="${CSS.escape(gid)}"] input:checked`)].map((x) => x.value);
+    refreshItemFoot();
+  });
+  // allow un-selecting an optional single choice by tapping it again
+  sh.querySelectorAll('.choice input[type=radio]').forEach((inp) => inp.closest('.choice').addEventListener('click', (e) => {
+    const gid = inp.closest('.group').dataset.g; const g = it.options.find((x) => String(x.id) === gid);
+    if (!g.required && inp.checked && e.target === inp.closest('.choice').querySelector('input') && detail._wasChecked === inp.value) {
+      inp.checked = false; detail.options[g.id] = []; refreshItemFoot(); }
+  }));
+  sh.querySelectorAll('.choice').forEach((lab) => lab.addEventListener('pointerdown', () => { const i = lab.querySelector('input'); detail._wasChecked = i.checked ? i.value : null; }));
+  $('noteInput').oninput = (e) => { detail.note = e.target.value; };
+  sh.querySelectorAll('[data-q]').forEach((b) => b.onclick = () => { detail.qty = Math.max(1, Math.min(50, detail.qty + Number(b.dataset.q))); refreshItemFoot(); });
+  $('addBtn').onclick = addDetailToCart;
+}
+function refreshItemFoot() {
+  const sh = $('itemSheet');
+  sh.querySelector('.stepper span').textContent = detail.qty;
+  sh.querySelector('[data-q="-1"]').disabled = detail.qty <= 1;
+  $('addBtn').lastElementChild.textContent = rm(unitPrice(detail.item, detail.options) * detail.qty);
+  sh.querySelectorAll('.group').forEach((gEl) => { const g = detail.item.options.find((x) => String(x.id) === gEl.dataset.g);
+    if (g.required) { const ok = (detail.options[g.id] || []).length > 0; const b = gEl.querySelector('.badge'); b.classList.toggle('ok', ok); b.textContent = (ok ? '✓ ' : '') + t('required'); } });
+}
+function addDetailToCart() {
+  const miss = missingGroups();
+  if (miss.length) {
+    const el = $('itemSheet').querySelector(`.group[data-g="${CSS.escape(String(miss[0].id))}"]`);
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+    toast(t('chooseRequired') + ': ' + L(miss[0].name)); return;
+  }
+  const options = {}; Object.entries(detail.options).forEach(([k, v]) => { if (v.length) options[k] = [...v].sort(); });
+  const note = detail.note.trim();
+  if (detail.editKey) cart = cart.filter((l) => l.key !== detail.editKey);
+  const same = cart.find((l) => l.itemId === detail.item.id && JSON.stringify(l.options) === JSON.stringify(options) && l.note === note);
+  if (same) same.qty = Math.min(50, same.qty + detail.qty);
+  else cart.push({ key: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), itemId: detail.item.id, qty: detail.qty, options, note });
+  saveCart(); const wasEdit = detail.editKey; closeSheets(); $('toast').classList.remove('show');
+  if (wasEdit) openCart(); else { $('cartbar').classList.remove('bump'); void $('cartbar').offsetWidth; $('cartbar').classList.add('bump'); }
+}
+
+// ---------------- cart ----------------
+function saveCart() {
+  cart = cart.filter((l) => itemsById.has(l.itemId));
+  store.set(cartKey, cart); renderCartBar();
+  document.querySelectorAll('.item').forEach((row) => { const it = itemsById.get(Number(row.dataset.id)); if (it) row.outerHTML = itemRow(it); });
+}
+const lineUnit = (l) => unitPrice(itemsById.get(l.itemId), l.options);
+const cartTotal = () => cart.reduce((s, l) => s + lineUnit(l) * l.qty, 0);
+const cartCount = () => cart.reduce((s, l) => s + l.qty, 0);
+function renderCartBar() {
+  const n = cartCount();
+  $('cartCount').textContent = n; $('cartTotal').textContent = rm(cartTotal()); $('cartGo').textContent = t('viewCart');
+  $('cartbar').classList.toggle('show', n > 0 && !$('success').classList.contains('show'));
+}
+$('cartbar').onclick = () => openCart();
+function optText(it, options) {
+  return it.options.flatMap((g) => (options[g.id] || []).map((cid) => { const c = g.choices.find((x) => x.id === cid); return c ? L(c.name) : null; })).filter(Boolean).join(' · ');
+}
+function openCart() { renderCart(); showSheet($('cartSheet')); }
+function renderCart() {
+  const lines = cart.map((l) => { const it = itemsById.get(l.itemId); const o = optText(it, l.options);
+    return `<div class="cart-line" data-k="${l.key}"><div class="info" data-edit="${l.key}" style="cursor:pointer"><div class="nm">${esc(L(it.name))}</div>
+      ${o ? `<div class="opts">${esc(o)}</div>` : ''}${l.note ? `<div class="nt">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}
+      <div class="pr">${rm(lineUnit(l) * l.qty)}</div></div>
+      <div class="stepper sm"><button data-d="-1">${ICON.minus}</button><span>${l.qty}</span><button data-d="1">${ICON.plus}</button></div></div>`; }).join('');
+  $('cartSheet').innerHTML = `<div class="grip"></div>
+    <div class="sheet-head"><h3>${esc(t('cart'))} · ${esc(t('table'))} ${esc(table.name)}</h3><button class="close" data-close>${ICON.close}</button></div>
+    <div class="sheet-body">${cart.length ? lines + `<div class="summary"><span>${esc(t('total'))}</span><span>${rm(cartTotal())}</span></div>
+      <div class="pay-hint">${ICON.counter}<span>${esc(t('payHint'))}</span></div>
+      <div style="text-align:center;padding-bottom:8px"><button class="link-btn" id="clearBtn">${esc(t('clear'))}</button></div>` : `<div class="empty">${esc(t('emptyCart'))}</div>`}</div>
+    <div class="sheet-foot"><button class="primary" id="placeBtn" ${cart.length ? '' : 'disabled'}><span>${esc(t('placeOrder'))}</span><span>${rm(cartTotal())}</span></button></div>`;
+  const sh = $('cartSheet');
+  sh.querySelector('[data-close]').onclick = closeSheets;
+  sh.querySelectorAll('[data-d]').forEach((b) => b.onclick = () => { const k = b.closest('.cart-line').dataset.k; const l = cart.find((x) => x.key === k);
+    l.qty += Number(b.dataset.d); if (l.qty <= 0) cart = cart.filter((x) => x !== l); l.qty = Math.min(50, l.qty); saveCart(); if (cart.length) renderCart(); else closeSheets(); });
+  sh.querySelectorAll('[data-edit]').forEach((d) => d.onclick = () => { const l = cart.find((x) => x.key === d.dataset.edit); openItem(l.itemId, l.key); });
+  if ($('clearBtn')) $('clearBtn').onclick = () => { if (confirm(t('confirmClear'))) { cart = []; saveCart(); closeSheets(); } };
+  $('placeBtn').onclick = placeOrder;
+}
+let placing = false;
+async function placeOrder() {
+  if (placing || !cart.length) return; placing = true;
+  const btn = $('placeBtn'); btn.disabled = true; btn.innerHTML = `<span style="flex:1;text-align:center">${esc(t('placing'))}</span>`;
+  try {
+    const res = await api('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: tableToken, clientId, lines: cart.map((l) => ({ itemId: l.itemId, qty: l.qty, options: l.options, note: l.note })) }) });
+    const snapshot = cart.map((l) => ({ name: itemsById.get(l.itemId).name, qty: l.qty, opts: optText(itemsById.get(l.itemId), l.options), note: l.note, sum: lineUnit(l) * l.qty }));
+    cart = []; saveCart(); closeSheets(); showSuccess(res, snapshot);
+  } catch (e) {
+    if (e.data?.error === 'SOLD_OUT') { toast(t('soldOutErr').replace('{x}', L(e.data.itemName))); await reloadMenu(); }
+    else if (e.data?.error === 'ITEM_UNAVAILABLE' || e.data?.error === 'BAD_OPTION' || e.data?.error === 'OPTION_REQUIRED') { toast(t('unavailErr')); await reloadMenu(); }
+    else if (e.status === 429) toast(t('tooMany'));
+    else toast(t('netErr'));
+    if (openSheet === $('cartSheet')) renderCart();
+  } finally { placing = false; }
+}
+function showSuccess(res, snapshot) {
+  const rows = snapshot.map((l) => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${l.opts ? `<div class="o">${esc(l.opts)}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(l.sum)}</b></div>`).join('');
+  $('success').innerHTML = `
+    <div class="tick">${ICON.check}</div>
+    <h2>${esc(t('sent'))}</h2><p class="sub">${esc(t('orderNo'))} #${res.seq} · ${esc(t('table'))} ${esc(table.name)}</p>
+    <div class="pay-card">${ICON.counter}<span>${esc(t('enjoy'))}</span></div>
+    <div class="receipt">${rows}<div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(res.total)}</span></div></div>
+    <div class="success-actions"><button class="primary center" id="moreBtn">${esc(t('orderMore'))}</button><button class="ghost" id="seeBtn">${esc(t('viewOrders'))}</button></div>`;
+  $('success').classList.add('show'); $('success').scrollTop = 0; renderCartBar();
+  $('moreBtn').onclick = () => { $('success').classList.remove('show'); renderCartBar(); window.scrollTo(0, 0); };
+  $('seeBtn').onclick = () => { $('success').classList.remove('show'); renderCartBar(); openHistory(); };
+}
+
+// ---------------- history ----------------
+async function openHistory() {
+  $('histSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('orders'))}</h3><button class="close" data-close>${ICON.close}</button></div>
+    <div class="sheet-body"><div class="skeleton"><div class="sk" style="height:140px"></div></div></div>`;
+  $('histSheet').querySelector('[data-close]').onclick = closeSheets;
+  showSheet($('histSheet'));
+  let orders = [];
+  try { orders = (await api('/api/my-orders?clientId=' + encodeURIComponent(clientId))).orders; } catch { toast(t('netErr')); }
+  const fmtTime = (ms) => new Date(ms).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : lang === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' });
+  const body = orders.length ? `<div style="padding:0 16px;color:var(--muted);font-size:13px">${esc(t('histNote'))}</div>` + orders.map((o) => `
+    <div class="hist"><div class="hist-head"><b>${esc(t('orderNo'))} #${o.seq}</b><span>${esc(t('table'))} ${esc(o.table)} · ${fmtTime(o.createdAt)}</span></div>
+      ${o.lines.map((l) => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${l.options.length ? `<div class="o">${esc(l.options.map((x) => L(x.choice)).join(' · '))}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(l.unit * l.qty)}</b></div>`).join('')}
+      <div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(o.total)}</span></div></div>`).join('') + '<div style="height:16px"></div>'
+    : `<div class="empty">${ICON.receipt.replace('<svg', '<svg width="40" height="40"')}<p>${esc(t('noOrders'))}</p></div>`;
+  $('histSheet').querySelector('.sheet-body').innerHTML = body;
+}
+
+// ---------------- misc ----------------
+let toastTimer;
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
+async function reloadMenu() {
+  menu = (await api('/api/menu')).categories;
+  itemsById = new Map(menu.flatMap((c) => c.items).map((i) => [i.id, i]));
+  cart = cart.filter((l) => itemsById.has(l.itemId) && !itemsById.get(l.itemId).soldOut);
+  store.set(cartKey, cart);
+  if ($('tabs')) renderPage();
+}
+function fatal() {
+  $('app').innerHTML = `<div class="fatal"><div style="color:var(--muted-2)">${ICON.dish.replace('<svg', '<svg width="64" height="64"')}</div><h2>${esc(t('badTable'))}</h2><p>${esc(t('badTableSub'))}</p>
+    <div style="margin-top:20px;display:flex;gap:8px;justify-content:center">${LANGS.map(([k, n]) => `<button class="icon-btn" onclick="lang='${k}';store.set('lang',lang);fatal()">${n}</button>`).join('')}</div></div>`;
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+// Refresh sold-out status when the guest returns to the tab
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && table) reloadMenu().catch(() => {}); });
+
+(async function init() {
+  try {
+    [config, table] = await Promise.all([api('/api/config'), api('/api/table/' + encodeURIComponent(tableToken))]);
+  } catch (e) { if (e.status === 404) return fatal(); $('app').innerHTML = `<div class="fatal"><h2>${esc(t('netErr'))}</h2><button class="primary center" style="max-width:240px;margin:20px auto" onclick="location.reload()">↻</button></div>`; return; }
+  await reloadMenu(); renderPage();
+})();
+</script>
+</body>
+</html>

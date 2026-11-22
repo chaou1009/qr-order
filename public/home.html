@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Welcome</title>
+<link rel="stylesheet" href="/app.css">
+<style>
+  body { display: grid; place-items: center; min-height: 100vh; text-align: center; padding: 24px; }
+  h1 { margin: 0 0 8px; } p { color: var(--muted); margin: 4px 0; }
+</style>
+</head>
+<body>
+<div>
+  <h1 id="n">Welcome</h1>
+  <p>Please scan the QR code on your table to order.</p>
+  <p>Sila imbas kod QR di meja anda untuk memesan.</p>
+  <p>请扫描桌上的二维码点餐。</p>
+</div>
+<script>fetch('/api/config').then((r) => r.json()).then((c) => { document.getElementById('n').textContent = c.name; document.title = c.name; }).catch(() => {});</script>
+</body>
+</html>

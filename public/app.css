@@ -1,0 +1,24 @@
+/* Shared design tokens. Change --accent to match the restaurant's brand colour. */
+:root {
+  --accent: #e2552b;
+  --accent-ink: #b23a14;
+  --accent-soft: #fdebe4;
+  --ink: #1d1b19;
+  --ink-2: #3d3935;
+  --muted: #77706a;
+  --muted-2: #b0a9a2;
+  --bg: #f6f4f1;
+  --surface: #ffffff;
+  --chip: #f1eeea;
+  --line: #ebe7e2;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; color: var(--ink); background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-size: 15px; line-height: 1.45;
+}
+button { font: inherit; cursor: pointer; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
