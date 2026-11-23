@@ -464,13 +464,13 @@ function thumb(item, cls = 'thumb') {
 }
 // Limited dishes: what this guest can still add = remaining portions − portions in other guests' carts − own cart.
 const inCartQty = (id, exceptKey) => cart.filter((l) => l.itemId === id && l.key !== exceptKey).reduce((s, l) => s + l.qty, 0);
-const canAdd = (it, exceptKey) => it.stock == null ? 50 : Math.max(0, it.stock - (it.held || 0) - inCartQty(it.id, exceptKey));
+const canAdd = (it, exceptKey) => it.stock == null ? 50 : Math.max(0, it.stock - (it.held || 0) - (it.mine || 0) - inCartQty(it.id, exceptKey));
 function stockNote(it) {
   if (it.stock == null || it.soldOut) return '';
   const parts = [];
-  if (it.stock - (it.held || 0) > 0) parts.push(t('onlyLeft').replace('{n}', Math.max(0, it.stock - (it.held || 0))));
+  if (it.stock - (it.held || 0) - (it.mine || 0) > 0) parts.push(t('onlyLeft').replace('{n}', Math.max(0, it.stock - (it.held || 0) - (it.mine || 0))));
   if (it.held) parts.push(it.stock - it.held <= 0 ? t('heldOut') : t('inCarts').replace('{n}', it.held));
-  return `<div class="stock-note${it.stock - (it.held || 0) <= 0 ? ' out' : ''}">${esc(parts.join(' · '))}</div>`;
+  return `<div class="stock-note${it.stock - (it.held || 0) - (it.mine || 0) <= 0 ? ' out' : ''}">${esc(parts.join(' · '))}</div>`;
 }
 function itemRow(it) {
   const inCart = inCartQty(it.id);
@@ -520,7 +520,7 @@ $('scrim').onclick = closeSheets;
 // ---------------- item detail ----------------
 function openItem(id, editKey) {
   const it = itemsById.get(id); if (!it || it.soldOut) return;
-  if (!editKey && canAdd(it) <= 0) return toast(t('maxLeft').replace('{n}', Math.max(0, it.stock - (it.held || 0))));
+  if (!editKey && canAdd(it) <= 0) return toast(t('maxLeft').replace('{n}', Math.max(0, it.stock - (it.held || 0) - (it.mine || 0))));
   const existing = editKey ? cart.find((l) => l.key === editKey) : null;
   const options = existing ? JSON.parse(JSON.stringify(existing.options)) : {};
   if (!existing) it.options.forEach((g) => { if (g.type === 'single' && g.required && g.choices.length === 1) options[g.id] = [g.choices[0].id]; });
@@ -577,7 +577,7 @@ function renderItem() {
   sh.querySelectorAll('[data-ta]').forEach((b) => b.onclick = () => { detail.takeaway = b.dataset.ta === '1';
     sh.querySelectorAll('[data-ta]').forEach((x) => x.classList.toggle('on', x === b)); });
   sh.querySelectorAll('[data-q]').forEach((b) => b.onclick = () => { const max = Math.min(50, canAdd(detail.item, detail.editKey));
-    if (Number(b.dataset.q) > 0 && detail.qty >= max) return toast(t('maxLeft').replace('{n}', Math.max(0, detail.item.stock - (detail.item.held || 0))));
+    if (Number(b.dataset.q) > 0 && detail.qty >= max) return toast(t('maxLeft').replace('{n}', Math.max(0, detail.item.stock - (detail.item.held || 0) - (detail.item.mine || 0))));
     detail.qty = Math.max(1, Math.min(max, detail.qty + Number(b.dataset.q))); refreshItemFoot(); });
   $('addBtn').onclick = addDetailToCart;
 }
@@ -598,7 +598,7 @@ function addDetailToCart() {
   }
   const options = {}; Object.entries(detail.options).forEach(([k, v]) => { if (v.length) options[k] = [...v].sort(); });
   const note = detail.note.trim();
-  if (detail.qty > canAdd(detail.item, detail.editKey)) return toast(t('maxLeft').replace('{n}', Math.max(0, detail.item.stock - (detail.item.held || 0))));
+  if (detail.qty > canAdd(detail.item, detail.editKey)) return toast(t('maxLeft').replace('{n}', Math.max(0, detail.item.stock - (detail.item.held || 0) - (detail.item.mine || 0))));
   if (detail.editKey) cart = cart.filter((l) => l.key !== detail.editKey);
   const takeaway = !!detail.takeaway;
   const same = cart.find((l) => l.itemId === detail.item.id && JSON.stringify(l.options) === JSON.stringify(options) && l.note === note && !!l.takeaway === takeaway);
@@ -631,7 +631,7 @@ async function syncHolds(force) {
       for (const l of [...cart].reverse()) { if (over <= 0 || l.itemId !== Number(id)) continue; const cut = Math.min(over, l.qty); l.qty -= cut; over -= cut; trimmed = itemsById.get(l.itemId); }
     }
     if (trimmed) { cart = cart.filter((l) => l.qty > 0); store.set(cartKey, cart); renderCartBar(); refreshRows(); holdsSig = '';
-      toast(t('stockErr').replace('{n}', Math.max(0, trimmed.stock - (trimmed.held || 0))).replace('{x}', L(trimmed.name))); if (openSheet === $('cartSheet')) { if (cart.length) renderCart(); else closeSheets(); } }
+      toast(t('stockErr').replace('{n}', Math.max(0, trimmed.stock - (trimmed.held || 0) - (trimmed.mine || 0))).replace('{x}', L(trimmed.name))); if (openSheet === $('cartSheet')) { if (cart.length) renderCart(); else closeSheets(); } }
   } catch {}
 }
 setInterval(() => { if (document.visibilityState === 'visible' && cart.some((l) => itemsById.get(l.itemId)?.stock != null)) syncHolds(true); }, 60000);
@@ -640,7 +640,7 @@ function applyAvail(avail) {
   if (!avail) return; let changed = false, hide = false;
   for (const it of itemsById.values()) {
     const a = avail[it.id] || { soldOut: false, stock: null, held: 0 };
-    if (it.soldOut !== a.soldOut || it.stock !== a.stock || (it.held || 0) !== a.held) { if (config.hideSoldOut && a.soldOut && !it.soldOut) hide = true; it.soldOut = a.soldOut; it.stock = a.stock; it.held = a.held; changed = true; }
+    if (it.soldOut !== a.soldOut || it.stock !== a.stock || (it.held || 0) !== a.held || (it.mine || 0) !== (a.mine || 0)) { if (config.hideSoldOut && a.soldOut && !it.soldOut) hide = true; it.soldOut = a.soldOut; it.stock = a.stock; it.held = a.held; it.mine = a.mine || 0; changed = true; }
   }
   if (hide) return reloadMenu().catch(() => {}); // shop hides sold-out dishes: take it off the menu
   if (changed) refreshRows();
@@ -673,7 +673,7 @@ function renderCart() {
   const sh = $('cartSheet');
   sh.querySelector('[data-close]').onclick = closeSheets;
   sh.querySelectorAll('[data-d]').forEach((b) => b.onclick = () => { const k = b.closest('.cart-line').dataset.k; const l = cart.find((x) => x.key === k);
-    if (Number(b.dataset.d) > 0 && canAdd(itemsById.get(l.itemId)) <= 0) return toast(t('maxLeft').replace('{n}', Math.max(0, itemsById.get(l.itemId).stock - (itemsById.get(l.itemId).held || 0))));
+    if (Number(b.dataset.d) > 0 && canAdd(itemsById.get(l.itemId)) <= 0) return toast(t('maxLeft').replace('{n}', Math.max(0, itemsById.get(l.itemId).stock - (itemsById.get(l.itemId).held || 0) - (itemsById.get(l.itemId).mine || 0))));
     l.qty += Number(b.dataset.d); if (l.qty <= 0) cart = cart.filter((x) => x !== l); l.qty = Math.min(50, l.qty); saveCart(); if (cart.length) renderCart(); else closeSheets(); });
   sh.querySelectorAll('[data-edit]').forEach((d) => d.onclick = () => { const l = cart.find((x) => x.key === d.dataset.edit); openItem(l.itemId, l.key); });
   if ($('clearBtn')) $('clearBtn').onclick = () => { if (confirm(t('confirmClear'))) { cart = []; saveCart(); closeSheets(); } };

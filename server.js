@@ -106,6 +106,9 @@ CREATE TABLE IF NOT EXISTS item_ingredients (
 );
 CREATE INDEX IF NOT EXISTS idx_item_ing ON item_ingredients(ing_id);
 `);
+for (const [col, def] of [['daily', 'INTEGER'], ['reset_day', 'TEXT']]) {
+  if (!db.prepare('PRAGMA table_info(ingredients)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE ingredients ADD COLUMN ${col} ${def}`);
+}
 // Older databases: turn each "shared portions" group into an ingredient of the same name.
 for (const r of db.prepare("SELECT stock_pool AS k, MIN(stock) AS stock FROM items WHERE stock_pool IS NOT NULL GROUP BY stock_pool").all()) {
   const ing = db.prepare('INSERT INTO ingredients (name, stock, sort) VALUES (?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM ingredients))').run(r.k, r.stock);
@@ -237,22 +240,37 @@ function ingHeldByOthers(ingId, clientId) {
 }
 function heldByOthers(itemId, clientId) { return db.prepare('SELECT COALESCE(SUM(qty), 0) AS n FROM holds WHERE item_id = ? AND client_id != ? AND expires_at > ?').get(itemId, clientId || '', Date.now()).n; }
 function heldBySelf(itemId, clientId) { return db.prepare('SELECT COALESCE(SUM(qty), 0) AS n FROM holds WHERE item_id = ? AND client_id = ?').get(itemId, clientId).n; }
+// How much of an ingredient this guest's own cart uses for its other dishes (e.g. curry for a second curry dish).
+function ingHeldBySelfOther(ingId, clientId, itemId) {
+  return db.prepare('SELECT COALESCE(SUM(h.qty * MAX(1, ii.qty)), 0) AS n FROM holds h JOIN item_ingredients ii ON ii.item_id = h.item_id WHERE ii.ing_id = ? AND h.client_id = ? AND h.item_id != ? AND h.expires_at > ?')
+    .get(ingId, clientId, itemId, Date.now()).n;
+}
 // Portions of a dish left: its own limit and every ingredient it needs, whichever runs out first. null = no limit.
-// clientId undefined = count what sits in carts as still available.
-function portionsLeft(it, clientId) {
+// clientId undefined = count what sits in carts as still available; ownOther = also count this guest's other dishes
+// that use the same ingredients (not this dish itself: the phone subtracts its own cart for that).
+function portionsLeft(it, clientId, ownOther = false) {
   let n = it.stock == null ? null : Math.max(0, it.stock - (clientId === undefined ? 0 : heldByOthers(it.id, clientId)));
   for (const g of ingOf(it.id)) {
     if (g.stock == null) continue;
-    const k = Math.floor(Math.max(0, g.stock - (clientId === undefined ? 0 : ingHeldByOthers(g.id, clientId))) / g.per);
+    const used = clientId === undefined ? 0 : ingHeldByOthers(g.id, clientId) + (ownOther ? ingHeldBySelfOther(g.id, clientId, it.id) : 0);
+    const k = Math.floor(Math.max(0, g.stock - used) / g.per);
     n = n == null ? k : Math.min(n, k);
   }
   return n;
 }
 const stockOf = (it) => portionsLeft(it, undefined);
-// One guest's view of a dish: portions left in total, and how many of those sit in other guests' carts.
+// One guest's view of a dish: portions left in total, how many of those sit in other guests' carts (held),
+// and how many this guest's own cart already uses through other dishes sharing an ingredient (mine).
 function stockView(it, clientId) {
-  const total = stockOf(it); if (total == null) return { stock: null, held: 0 };
-  return { stock: total, held: Math.max(0, total - (portionsLeft(it, clientId) ?? total)) };
+  const total = stockOf(it); if (total == null) return { stock: null, held: 0, mine: 0 };
+  const others = portionsLeft(it, clientId) ?? total, withMine = portionsLeft(it, clientId, true) ?? others;
+  return { stock: total, held: Math.max(0, total - others), mine: Math.max(0, others - withMine) };
+}
+// Ingredients with a daily amount go back to it at the start of each day (shop time zone).
+function dailyReset() {
+  const d = today();
+  if (dailyReset.day === d) return; dailyReset.day = d;
+  db.prepare('UPDATE ingredients SET stock = daily, reset_day = ? WHERE daily IS NOT NULL AND (reset_day IS NULL OR reset_day != ?)').run(d, d);
 }
 // take portions off a dish's own limit and off every ingredient it uses (negative delta), or give them back
 function changeStock(itemId, delta) {
@@ -355,6 +373,7 @@ async function handle(req, res) {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
   const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (p.startsWith('/api/')) dailyReset();
 
   // Customer page: /t/<token>  (the token printed in each table's fixed QR code)
   if (req.method === 'GET' && (/^\/t\/[\w-]{6,40}$/.test(p) || p === '/o')) return serveFile(res, path.join(PUBLIC_DIR, 'order.html'));
@@ -398,7 +417,7 @@ async function handle(req, res) {
     for (const [itemId, qty] of want) {
       const it = db.prepare('SELECT id, stock FROM items WHERE id = ?').get(itemId);
       if (!it || !qty) continue;
-      const left = portionsLeft(it, clientId); if (left == null) continue;
+      const left = portionsLeft(it, clientId, true); if (left == null) continue; // counts this cart's other dishes already reserved above
       const g = Math.min(qty, Math.max(0, left - heldBySelf(itemId, clientId)));
       granted[itemId] = g;
       if (g) db.prepare('INSERT INTO holds (client_id, item_id, qty, expires_at) VALUES (?, ?, ?, ?)').run(clientId, itemId, g, Date.now() + HOLD_MS);
@@ -666,14 +685,16 @@ async function adminApi(req, res, p, url) {
   if (p === '/api/admin/ingredients' && req.method === 'GET') {
     const rows = db.prepare('SELECT * FROM ingredients ORDER BY sort, id').all();
     const used = {}; for (const r of db.prepare('SELECT ing_id, COUNT(*) AS n FROM item_ingredients GROUP BY ing_id').all()) used[r.ing_id] = r.n;
-    return send(res, 200, { ingredients: rows.map((g) => ({ id: g.id, name: g.name, stock: g.stock, usedBy: used[g.id] || 0 })) });
+    return send(res, 200, { ingredients: rows.map((g) => ({ id: g.id, name: g.name, stock: g.stock, daily: g.daily, usedBy: used[g.id] || 0, held: ingHeldByOthers(g.id, '') })) });
   }
   if ((p === '/api/admin/ingredients' && req.method === 'POST') || ((m = /^\/api\/admin\/ingredients\/(\d+)$/.exec(p)) && req.method === 'PUT')) {
+    const num = (v) => v === null || v === '' || v === undefined ? null : Math.max(0, Math.min(99999, Math.floor(Number(v) || 0)));
     const fields = {}; if ('name' in body) { const n = String(body.name || '').trim().slice(0, 40); if (!n) return send(res, 400, { error: 'NAME' }); fields.name = n; }
-    if ('stock' in body) fields.stock = body.stock === null || body.stock === '' ? null : Math.max(0, Math.min(99999, Math.floor(Number(body.stock) || 0)));
+    if ('stock' in body) fields.stock = num(body.stock);
+    if ('daily' in body) { fields.daily = num(body.daily); fields.reset_day = today(); } // today's count stays as typed; the daily amount starts tomorrow
     if (m) { const id = Number(m[1]); const keys = Object.keys(fields); if (keys.length) db.prepare(`UPDATE ingredients SET ${keys.map((k) => k + ' = ?').join(', ')} WHERE id = ?`).run(...keys.map((k) => fields[k]), id); return send(res, 200, { id }); }
     if (!fields.name) return send(res, 400, { error: 'NAME' });
-    const r = db.prepare('INSERT INTO ingredients (name, stock, sort) VALUES (?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM ingredients))').run(fields.name, fields.stock ?? null);
+    const r = db.prepare('INSERT INTO ingredients (name, stock, daily, reset_day, sort) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM ingredients))').run(fields.name, fields.stock ?? null, fields.daily ?? null, today());
     return send(res, 201, { id: Number(r.lastInsertRowid) });
   }
   if ((m = /^\/api\/admin\/ingredients\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
