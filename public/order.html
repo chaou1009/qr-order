@@ -468,9 +468,10 @@ const canAdd = (it, exceptKey) => it.stock == null ? 50 : Math.max(0, it.stock -
 function stockNote(it) {
   if (it.stock == null || it.soldOut) return '';
   const parts = [];
-  if (it.stock - (it.held || 0) - (it.mine || 0) > 0) parts.push(t('onlyLeft').replace('{n}', Math.max(0, it.stock - (it.held || 0) - (it.mine || 0))));
+  const left = canAdd(it); // what is still free after other carts and this guest's own cart
+  if (left > 0) parts.push(t('onlyLeft').replace('{n}', left));
   if (it.held) parts.push(it.stock - it.held <= 0 ? t('heldOut') : t('inCarts').replace('{n}', it.held));
-  return `<div class="stock-note${it.stock - (it.held || 0) - (it.mine || 0) <= 0 ? ' out' : ''}">${esc(parts.join(' · '))}</div>`;
+  return parts.length ? `<div class="stock-note${left <= 0 ? ' out' : ''}">${esc(parts.join(' · '))}</div>` : '';
 }
 function itemRow(it) {
   const inCart = inCartQty(it.id);
@@ -634,6 +635,8 @@ async function syncHolds(force) {
       toast(t('stockErr').replace('{n}', Math.max(0, trimmed.stock - (trimmed.held || 0) - (trimmed.mine || 0))).replace('{x}', L(trimmed.name))); if (openSheet === $('cartSheet')) { if (cart.length) renderCart(); else closeSheets(); } }
   } catch {}
 }
+// The same phone with the menu open in two tabs shares one cart: keep them in step.
+window.addEventListener('storage', (e) => { if (e.key && e.key.endsWith(cartKey)) { cart = store.get(cartKey, []); renderCartBar(); refreshRows(); if (openSheet === $('cartSheet')) { if (cart.length) renderCart(); else closeSheets(); } } });
 setInterval(() => { if (document.visibilityState === 'visible' && cart.some((l) => itemsById.get(l.itemId)?.stock != null)) syncHolds(true); }, 60000);
 // Live availability from the server: { itemId: { soldOut, stock, held } } (dishes not listed are normal).
 function applyAvail(avail) {

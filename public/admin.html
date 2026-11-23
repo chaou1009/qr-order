@@ -437,7 +437,7 @@ function shrink(file, max = 1000, type = 'jpeg') {
 function drawIngs() {
   const row = (g) => `<div class="row ingrow" data-id="${g.id}"><div class="grow"><input type="text" maxlength="40" data-n value="${esc(g.name)}"></div>
     <label class="field">${esc(tr('ingStock'))}<span class="st"><input type="number" min="0" step="1" inputmode="numeric" data-s placeholder="${esc(tr('noLimit'))}" value="${g.stock ?? ''}"></span></label>
-    <span class="tag blue">${esc(tr('ingUsedBy', { n: g.usedBy }))}</span>${g.held ? `<span class="held">${esc(tr('ingHeld', { n: g.held }))}</span>` : ''}
+    <span class="tag blue">${esc(tr('ingUsedBy', { n: g.usedBy }))}</span>
     <div style="display:flex;gap:6px;align-self:flex-end"><button class="btn small" data-apply>${esc(tr('applyIng'))}</button><button class="btn small primary" data-save>${esc(tr('save'))}</button><button class="btn small danger" data-del>${esc(tr('delIng'))}</button></div></div>`;
   $('main').innerHTML = `<div class="bar"><h2>${esc(tr('ings'))}</h2></div><p class="hint">${esc(tr('ingHint'))}</p>${ings.map(row).join('')}
     <div class="row ingrow" id="newIng"><div class="grow"><input type="text" maxlength="40" data-n placeholder="${esc(tr('ingNamePh'))}"></div>
