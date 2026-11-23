@@ -631,6 +631,17 @@ async function adminApi(req, res, p, url) {
     const r = db.prepare('INSERT INTO option_templates (name, type, required, choices, sort) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM option_templates))').run(...vals);
     return send(res, 201, { id: Number(r.lastInsertRowid) });
   }
+  // set, in one go, which dishes use a shared option group
+  if ((m = /^\/api\/admin\/option-templates\/(\d+)\/items$/.exec(p)) && req.method === 'POST') {
+    const id = Number(m[1]); if (!templates().has(id)) return send(res, 404, { error: 'NOT_FOUND' });
+    const want = new Set((Array.isArray(body?.itemIds) ? body.itemIds : []).map(Number)); let changed = 0;
+    const upd = db.prepare('UPDATE items SET option_groups = ? WHERE id = ?');
+    for (const i of db.prepare('SELECT id, option_groups FROM items').all()) {
+      const g = parseJSON(i.option_groups, []) || [], has = g.includes(id), should = want.has(i.id);
+      if (has !== should) { upd.run(JSON.stringify(should ? [...g, id] : g.filter((x) => x !== id)), i.id); changed++; }
+    }
+    return send(res, 200, { changed });
+  }
   if ((m = /^\/api\/admin\/option-templates\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
     const id = Number(m[1]); db.prepare('DELETE FROM option_templates WHERE id = ?').run(id);
     for (const i of db.prepare('SELECT id, option_groups FROM items').all()) { const g = parseJSON(i.option_groups, []); if (g.includes(id)) db.prepare('UPDATE items SET option_groups = ? WHERE id = ?').run(JSON.stringify(g.filter((x) => x !== id)), i.id); }
