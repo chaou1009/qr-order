@@ -928,7 +928,7 @@ setInterval(() => { if (document.visibilityState === 'visible') checkSeat(); }, 
 let toastTimer;
 function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
 async function reloadMenu() {
-  menu = (await api('/api/menu?clientId=' + encodeURIComponent(clientId))).categories;
+  menu = (await api('/api/menu?clientId=' + encodeURIComponent(clientId) + (seat ? '&key=' + encodeURIComponent(seat.key) : ''))).categories;
   itemsById = new Map(menu.flatMap((c) => c.items).map((i) => [i.id, i]));
   cart = cart.filter((l) => itemsById.has(l.itemId) && !itemsById.get(l.itemId).soldOut);
   store.set(cartKey, cart);

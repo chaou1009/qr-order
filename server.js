@@ -280,6 +280,8 @@ function changeStock(itemId, delta) {
 }
 const setStock = (itemId, st) => db.prepare('UPDATE items SET stock = ? WHERE id = ?').run(st, itemId);
 // Live availability of limited / sold-out dishes for one guest: { itemId: { soldOut, stock, held } }
+// Carts are per phone AND per table: one browser open on two tables counts as two guests.
+const holderOf = (clientId, seat) => seat ? `${clientId}@${seat.sess.id}` : clientId;
 function availability(clientId) {
   const out = {};
   for (const it of db.prepare('SELECT id, sold_out, sold_out_day, stock FROM items WHERE listed = 1').all()) {
@@ -403,14 +405,15 @@ async function handle(req, res) {
     const clientId = url.searchParams.get('clientId') || '';
     const c = db.prepare("SELECT COALESCE(SUM(status != 'void'), 0) AS n, COALESCE(SUM(client_id = ? AND status != 'void'), 0) AS mine, COUNT(*) AS all_n FROM orders WHERE session_id = ?").get(clientId, seat.sess.id);
     return send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at, busy: busyInfo(), now: Date.now(), ...themeInfo(),
-      orderCount: c.n, mineCount: c.mine, allCount: c.all_n, avail: availability(clientId) });
+      orderCount: c.n, mineCount: c.mine, allCount: c.all_n, avail: availability(holderOf(clientId, seat)) });
   }
   // The guest's cart for limited dishes: reserve those portions for a few minutes so other guests see them as taken.
   if (p === '/api/holds' && req.method === 'POST') {
     const body = await readBody(req).catch(() => null);
     const seat = seatFromKey(body?.seat);
-    const clientId = String(body?.clientId || '');
-    if (!seat || !/^[\w-]{10,64}$/.test(clientId)) return send(res, 410, { error: 'SEAT_CLOSED' });
+    const rawId = String(body?.clientId || '');
+    if (!seat || !/^[\w-]{10,64}$/.test(rawId)) return send(res, 410, { error: 'SEAT_CLOSED' });
+    const clientId = holderOf(rawId, seat);
     const want = new Map();
     for (const h of Array.isArray(body.holds) ? body.holds.slice(0, 60) : []) want.set(Number(h.itemId), (want.get(Number(h.itemId)) || 0) + Math.max(0, Math.floor(Number(h.qty) || 0)));
     db.prepare('DELETE FROM holds WHERE client_id = ? OR expires_at < ?').run(clientId, Date.now());
@@ -460,7 +463,7 @@ async function handle(req, res) {
   if (DEMO && req.method === 'GET' && p === '/api/demo') {
     return send(res, 200, { tables: db.prepare('SELECT name, token FROM tables WHERE active = 1 ORDER BY sort, id').all(), pin: STAFF_PIN, adminPin: ADMIN_PIN });
   }
-  if (p === '/api/menu' && req.method === 'GET') return send(res, 200, { categories: loadMenu(url.searchParams.get('clientId') || '') });
+  if (p === '/api/menu' && req.method === 'GET') { const k = url.searchParams.get('key'); return send(res, 200, { categories: loadMenu(holderOf(url.searchParams.get('clientId') || '', k ? seatFromKey(k) : null)) }); }
 
   if (p === '/api/orders' && req.method === 'POST') {
     if (limited('o:' + ip, 20, 10 * 60e3)) return send(res, 429, { error: 'TOO_MANY' });
@@ -470,7 +473,7 @@ async function handle(req, res) {
     if (!/^[\w-]{10,64}$/.test(clientId)) return send(res, 400, { error: 'BAD_CLIENT' });
     const seat = seatFromKey(body.seat);
     if (!seat) return send(res, 410, { error: 'SEAT_CLOSED' });
-    const { table, sess } = seat;
+    const { table, sess } = seat; const holder = holderOf(clientId, seat);
     const itemsById = new Map(db.prepare('SELECT * FROM items').all().map((i) => [i.id, i]));
     let lines;
     try { lines = body.lines.map((l) => priceLine(l, itemsById)); }
@@ -481,16 +484,16 @@ async function handle(req, res) {
     const needIng = new Map();
     for (const [itemId, qty] of perItem) {
       const it = itemsById.get(itemId);
-      if (it.stock != null) { const left = Math.max(0, it.stock - heldByOthers(itemId, clientId));
+      if (it.stock != null) { const left = Math.max(0, it.stock - heldByOthers(itemId, holder));
         if (qty > left) return send(res, 409, { error: 'STOCK', itemName: parseJSON(it.name, {}), left }); }
       for (const g of ingOf(itemId)) if (g.stock != null) { const e = needIng.get(g.id) || { need: 0, g, itemId, per: g.per }; e.need += qty * g.per; needIng.set(g.id, e); }
     }
     for (const [ingId, e] of needIng) {
-      const left = Math.max(0, e.g.stock - ingHeldByOthers(ingId, clientId));
+      const left = Math.max(0, e.g.stock - ingHeldByOthers(ingId, holder));
       if (e.need > left) return send(res, 409, { error: 'STOCK', itemName: parseJSON(itemsById.get(e.itemId).name, {}), left: Math.floor(left / e.per) });
     }
     for (const [itemId, qty] of perItem) changeStock(itemId, -qty);
-    db.prepare('DELETE FROM holds WHERE client_id = ?').run(clientId);
+    db.prepare('DELETE FROM holds WHERE client_id = ?').run(holder);
     const total = lines.reduce((s, l) => s + l.unit * l.qty, 0);
     const now = Date.now(); const day = dayOf(now);
     const seq = db.prepare('SELECT COALESCE(MAX(seq), 0) + 1 AS n FROM orders WHERE day = ?').get(day).n;
