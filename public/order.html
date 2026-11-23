@@ -48,6 +48,17 @@
   .section h2 .bar { width: 4px; height: 20px; border-radius: 2px; background: var(--accent); flex: none; }
   .section h2 .cnt { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--chip); padding: 2px 9px; border-radius: 999px; }
   body[data-theme] .section h2 .bar { display: none; }
+  .section.specials { background: linear-gradient(180deg, var(--accent-soft), var(--surface) 140px); box-shadow: 0 0 0 2px var(--accent) inset; }
+  @media (min-width: 560px) { .section.specials { box-shadow: 0 0 0 2px var(--accent) inset, 0 4px 14px rgba(0,0,0,.06); } }
+  .section.specials h2 { color: var(--accent-ink); border-bottom-color: rgba(0,0,0,.06); padding-bottom: 4px; }
+  .section.specials .sp-ic { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+  .section.specials .sp-ic svg { width: 16px; height: 16px; }
+  .sp-sub { margin: 0 0 4px; font-size: 13px; color: var(--muted); padding-bottom: 8px; border-bottom: 2px solid rgba(0,0,0,.06); }
+  body[data-theme] .section.specials h2::before { display: none; }
+  .tab-sp { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; }
+  .tab-sp svg { width: 14px; height: 14px; }
+  .tab-sp.active { background: var(--accent); color: #fff; }
+
   .item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .item:last-child { border-bottom: 0; }
   .item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -307,7 +318,7 @@ const T = {
     noticeTxt: 'Order from your phone · pay at the counter', confirmClear: 'Remove all items from your cart?', dineIn: 'Dine in', takeaway: 'Take away', howServe: 'Dine in or take away?',
     voidNote: 'This order has been cancelled by our staff (wrong or duplicate order). It is not included in your bill.', cancelled: 'Cancelled', tabMine: 'My orders', tabTable: 'Whole table', stNew: 'Received', stDone: 'Confirmed', tableTotal: 'Table total',
     tableNote: 'Everything ordered at your table during this visit', closedT: 'Thank you for dining with us!', closedS: 'We hope to see you again soon. If you would like to order more, please scan the QR code on your table.',
-    viewOrdersBtn: 'View orders', onlyLeft: 'Only {n} left', inCarts: '{n} in other guests\' carts', heldOut: 'Last portions in other guests\' carts', maxLeft: 'Sorry, only {n} left for this dish.', stockErr: 'Sorry, only {n} portion(s) of {x} are available now. We have updated your cart.', reminded: 'Reminder sent', acked: 'Staff is on it', againIn: 'You can remind again in {m} min', cooldown: 'We received your reminder a moment ago. Thank you for your patience!', callStaff: 'Call a staff member', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
+    specials: 'Today\'s Specials', specialsSub: 'Chef\'s picks for today', viewOrdersBtn: 'View orders', onlyLeft: 'Only {n} left', inCarts: '{n} in other guests\' carts', heldOut: 'Last portions in other guests\' carts', maxLeft: 'Sorry, only {n} left for this dish.', stockErr: 'Sorry, only {n} portion(s) of {x} are available now. We have updated your cart.', reminded: 'Reminder sent', acked: 'Staff is on it', againIn: 'You can remind again in {m} min', cooldown: 'We received your reminder a moment ago. Thank you for your patience!', callStaff: 'Call a staff member', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
     callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Remind staff: a dish has not arrived yet', callDone: 'Staff notified, coming shortly', remindTitle: 'Which dishes have not arrived yet?',
     remindSub: 'Please tick the dishes you are still waiting for, and we will let the kitchen know right away.', remindBtn: 'Let the kitchen know',
     remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
@@ -326,7 +337,7 @@ const T = {
     noticeTxt: 'Pesan melalui telefon · bayar di kaunter', confirmClear: 'Buang semua item dari troli?', dineIn: 'Makan sini', takeaway: 'Bungkus', howServe: 'Makan sini atau bungkus?',
     voidNote: 'Pesanan ini telah dibatalkan oleh staf kami (pesanan salah atau berulang). Ia tidak termasuk dalam bil anda.', cancelled: 'Dibatalkan', tabMine: 'Pesanan saya', tabTable: 'Seluruh meja', stNew: 'Diterima', stDone: 'Disahkan', tableTotal: 'Jumlah meja',
     tableNote: 'Semua pesanan meja anda sepanjang kunjungan ini', closedT: 'Terima kasih kerana menjamu selera bersama kami!', closedS: 'Kami harap dapat berjumpa lagi. Jika ingin memesan lagi, sila imbas kod QR di meja anda.',
-    viewOrdersBtn: 'Lihat pesanan', onlyLeft: 'Tinggal {n} sahaja', inCarts: '{n} dalam troli pelanggan lain', heldOut: 'Bahagian terakhir dalam troli pelanggan lain', maxLeft: 'Maaf, hanya tinggal {n} untuk hidangan ini.', stockErr: 'Maaf, hanya {n} bahagian {x} yang tersedia sekarang. Troli anda telah dikemas kini.', reminded: 'Peringatan dihantar', acked: 'Kakitangan sedang uruskan', againIn: 'Boleh ingatkan semula dalam {m} minit', cooldown: 'Kami baru sahaja menerima peringatan anda. Terima kasih atas kesabaran anda!', callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
+    specials: 'Istimewa Hari Ini', specialsSub: 'Pilihan istimewa untuk hari ini', viewOrdersBtn: 'Lihat pesanan', onlyLeft: 'Tinggal {n} sahaja', inCarts: '{n} dalam troli pelanggan lain', heldOut: 'Bahagian terakhir dalam troli pelanggan lain', maxLeft: 'Maaf, hanya tinggal {n} untuk hidangan ini.', stockErr: 'Maaf, hanya {n} bahagian {x} yang tersedia sekarang. Troli anda telah dikemas kini.', reminded: 'Peringatan dihantar', acked: 'Kakitangan sedang uruskan', againIn: 'Boleh ingatkan semula dalam {m} minit', cooldown: 'Kami baru sahaja menerima peringatan anda. Terima kasih atas kesabaran anda!', callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
     callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Ingatkan pelayan: hidangan belum sampai', callDone: 'Pelayan dimaklumkan, akan datang', remindTitle: 'Hidangan mana yang belum sampai?',
     remindSub: 'Sila tandakan hidangan yang masih ditunggu, dan kami akan memaklumkan dapur dengan segera.', remindBtn: 'Maklumkan dapur',
     remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
@@ -345,7 +356,7 @@ const T = {
     noticeTxt: '手机点餐 · 柜台付款', confirmClear: '确定要移除购物车里的全部菜品吗？', dineIn: '堂食', takeaway: '外带', howServe: '请问堂食还是外带？',
     voidNote: '此单已由员工取消（错误单或重复下单），不计入您的账单。', cancelled: '已取消', tabMine: '我的订单', tabTable: '本桌订单', stNew: '已收到', stDone: '已确认', tableTotal: '本桌合计',
     tableNote: '本桌这次用餐的所有订单', closedT: '谢谢光临，欢迎再来！', closedS: '期待再次为您服务。如需再点餐，请重新扫描桌上的二维码。',
-    viewOrdersBtn: '查看订单', onlyLeft: '仅剩 {n} 份', inCarts: '{n} 份在其他客人的购物车中', heldOut: '最后几份已在其他客人的购物车中', maxLeft: '抱歉，这道菜只剩 {n} 份了。', stockErr: '抱歉，{x} 目前只剩 {n} 份，已为您更新购物车。', reminded: '已提醒', acked: '员工已确认', againIn: '{m} 分钟后可再次提醒', cooldown: '我们刚收到您的提醒，感谢您的耐心等候！', callStaff: '请服务员过来', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
+    specials: '今日特别', specialsSub: '今天特别推荐，欢迎品尝', viewOrdersBtn: '查看订单', onlyLeft: '仅剩 {n} 份', inCarts: '{n} 份在其他客人的购物车中', heldOut: '最后几份已在其他客人的购物车中', maxLeft: '抱歉，这道菜只剩 {n} 份了。', stockErr: '抱歉，{x} 目前只剩 {n} 份，已为您更新购物车。', reminded: '已提醒', acked: '员工已确认', againIn: '{m} 分钟后可再次提醒', cooldown: '我们刚收到您的提醒，感谢您的耐心等候！', callStaff: '请服务员过来', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
     callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '提醒服务员：还有菜未上桌', callDone: '已通知服务员，马上过来', remindTitle: '请问哪些菜还没上桌？',
     remindSub: '请勾选还在等待的菜品，我们会马上通知厨房。', remindBtn: '通知厨房',
     remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
@@ -372,6 +383,7 @@ const rm = (sen) => 'RM ' + (sen / 100).toFixed(2);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (id) => document.getElementById(id);
 const ICON = {
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg>',
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
@@ -409,7 +421,11 @@ function renderPage() {
   document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
   document.title = config.name || 'Menu';
   const initial = (config.name || 'R').trim().charAt(0).toUpperCase();
-  const tabs = menu.map((c, i) => `<button class="tab${i === 0 ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
+  const hasSp = menu.some((c) => c.items.some((i) => i.featured));
+  const tabs = menu.map((c, i) => `<button class="tab${i === 0 && !hasSp ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
+  const specials = menu.flatMap((c) => c.items).filter((i) => i.featured);
+  const specialTab = specials.length ? `<button class="tab tab-sp active" data-cat="special">${ICON.star}${esc(t('specials'))}</button>` : '';
+  const specialSec = specials.length ? `<section class="section specials" id="cat-special" data-cat="special"><h2><span class="sp-ic">${ICON.star}</span>${esc(t('specials'))}<span class="cnt">${specials.length}</span></h2><p class="sp-sub">${esc(t('specialsSub'))}</p>${specials.map(itemRow).join('')}</section>` : '';
   const sections = menu.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2><span class="bar"></span>${esc(L(c.name))}<span class="cnt">${c.items.length}</span></h2>${c.items.map(itemRow).join('')}</section>`).join('');
   $('app').innerHTML = `
     <header class="hero">
@@ -429,8 +445,8 @@ function renderPage() {
       </div>
       <div id="busyBar">${busyHTML()}</div>
     </header>
-    <nav class="tabs"><div class="tabs-scroll" id="tabs">${tabs}</div></nav>
-    <main>${sections}</main>
+    <nav class="tabs"><div class="tabs-scroll" id="tabs">${specialTab}${tabs}</div></nav>
+    <main>${specialSec}${sections}</main>
     <div class="footer-space">${esc(config.name)}</div>`;
   applyTheme();
   $('histBtn').onclick = openHistory;

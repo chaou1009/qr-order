@@ -75,7 +75,7 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(session_id)');
 if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === 'cook_minutes')) {
   db.exec('ALTER TABLE items ADD COLUMN cook_minutes INTEGER NOT NULL DEFAULT 15'); // usual time until served
 }
-for (const [col, def] of [['sold_out_day', 'TEXT'], ['stock', 'INTEGER']]) {
+for (const [col, def] of [['sold_out_day', 'TEXT'], ['stock', 'INTEGER'], ['featured', 'INTEGER NOT NULL DEFAULT 0'], ['days', 'TEXT'], ['option_groups', "TEXT NOT NULL DEFAULT '[]'"]]) {
   if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE items ADD COLUMN ${col} ${def}`);
 }
 db.exec(`
@@ -90,6 +90,11 @@ CREATE TABLE IF NOT EXISTS service_requests (
   type TEXT NOT NULL, detail TEXT NOT NULL, created_at INTEGER NOT NULL, handled_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_requests_open ON service_requests(handled_at);
+-- Shared option groups (e.g. "Ice level", "Spiciness") that many dishes or drinks can use; edit once, all update.
+CREATE TABLE IF NOT EXISTS option_templates (
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'single', required INTEGER NOT NULL DEFAULT 0,
+  choices TEXT NOT NULL DEFAULT '[]', sort INTEGER NOT NULL DEFAULT 0
+);
 `);
 const getSetting = (k, d) => { const r = db.prepare('SELECT value FROM settings WHERE key = ?').get(k); return r ? parseJSON(r.value, d) : d; };
 const setSetting = (k, v) => db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(k, JSON.stringify(v));
@@ -217,15 +222,27 @@ function availability(clientId) {
   }
   return out;
 }
+// Weekday in the shop's time zone (0 = Sunday). Dishes with set days only appear on those days.
+const DOW = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+const weekday = () => DOW[new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(new Date())];
+const onToday = (it) => { const d = parseJSON(it.days, null); return !Array.isArray(d) || !d.length || d.includes(weekday()); };
+const templates = () => new Map(db.prepare('SELECT * FROM option_templates ORDER BY sort, id').all().map((t) => [t.id, t]));
+const tplGroup = (t) => ({ id: 't' + t.id, name: parseJSON(t.name, {}), type: t.type, required: !!t.required, choices: parseJSON(t.choices, []), shared: true });
+// A dish's option groups: the shared ones it uses first, then its own.
+function itemOptions(it, tpl = templates()) {
+  const shared = parseJSON(it.option_groups, []).map((id) => tpl.get(Number(id))).filter(Boolean).map(tplGroup).filter((g) => g.choices.length);
+  return [...shared, ...parseJSON(it.options, [])];
+}
 function loadMenu(clientId) {
   const cats = db.prepare('SELECT * FROM categories ORDER BY sort, id').all();
-  const items = db.prepare('SELECT * FROM items WHERE listed = 1 ORDER BY sort, id').all();
+  const items = db.prepare('SELECT * FROM items WHERE listed = 1 ORDER BY sort, id').all().filter(onToday);
+  const tpl = templates();
   return cats.map((c) => ({
     id: c.id, name: parseJSON(c.name, {}),
     items: items.filter((i) => i.category_id === c.id).map((i) => ({
       id: i.id, name: parseJSON(i.name, {}), description: parseJSON(i.description, {}),
-      price: i.price, image: i.image, soldOut: isSoldOut(i), options: parseJSON(i.options, []), cookMinutes: i.cook_minutes || 15,
-      stock: i.stock, held: i.stock == null ? 0 : heldByOthers(i.id, clientId),
+      price: i.price, image: i.image, soldOut: isSoldOut(i), options: itemOptions(i, tpl), cookMinutes: i.cook_minutes || 15,
+      featured: !!i.featured, days: parseJSON(i.days, null), stock: i.stock, held: i.stock == null ? 0 : heldByOthers(i.id, clientId),
     })),
   })).filter((c) => c.items.length);
 }
@@ -233,11 +250,11 @@ function loadMenu(clientId) {
 // Validate a cart line against the live menu; returns a snapshot or throws.
 function priceLine(line, itemsById) {
   const it = itemsById.get(Number(line.itemId));
-  if (!it || !it.listed) throw new Error('ITEM_UNAVAILABLE');
+  if (!it || !it.listed || !onToday(it)) throw new Error('ITEM_UNAVAILABLE');
   if (isSoldOut(it)) throw Object.assign(new Error('SOLD_OUT'), { itemName: parseJSON(it.name, {}) });
   const qty = Math.floor(Number(line.qty));
   if (!(qty >= 1 && qty <= 50)) throw new Error('BAD_QTY');
-  const groups = parseJSON(it.options, []);
+  const groups = itemOptions(it);
   const chosen = line.options && typeof line.options === 'object' ? line.options : {};
   let unit = it.price; const picked = [];
   for (const g of groups) {
@@ -506,7 +523,7 @@ function cleanOptions(groups) {
 }
 const adminItem = (i) => ({ id: i.id, categoryId: i.category_id, name: parseJSON(i.name, {}), description: parseJSON(i.description, {}), price: i.price,
   image: i.image, options: parseJSON(i.options, []), listed: !!i.listed, soldOut: i.sold_out ? 'until' : i.sold_out_day === today() ? 'today' : 'none',
-  stock: i.stock, cookMinutes: i.cook_minutes || 15, sort: i.sort, held: i.stock == null ? 0 : heldByOthers(i.id, '') });
+  stock: i.stock, cookMinutes: i.cook_minutes || 15, sort: i.sort, featured: !!i.featured, days: parseJSON(i.days, []) || [], optionGroups: parseJSON(i.option_groups, []), held: i.stock == null ? 0 : heldByOthers(i.id, '') });
 
 async function adminApi(req, res, p, url) {
   const body = req.method === 'GET' ? null : await readBody(req, 6 * 1024 * 1024).catch(() => null);
@@ -548,10 +565,13 @@ async function adminApi(req, res, p, url) {
     if (!db.prepare('SELECT id FROM categories WHERE id = ?').get(cat)) return send(res, 400, { error: 'CATEGORY' });
     const image = /^\/uploads\/[\w-]+\.(jpg|png|webp)$/.test(body?.image || '') ? body.image : null;
     const cook = Math.min(240, Math.max(1, Math.round(Number(body?.cookMinutes) || 15)));
-    const vals = [cat, JSON.stringify(name), JSON.stringify(clean3(body?.description, 300)), price, image, JSON.stringify(cleanOptions(body?.options)), body?.listed === false ? 0 : 1, cook];
-    if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ? WHERE id = ?').run(...vals, Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
+    const days = [...new Set((Array.isArray(body?.days) ? body.days : []).map(Number).filter((d) => d >= 0 && d <= 6))].sort();
+    const tpl = templates(); const groupsUsed = [...new Set((Array.isArray(body?.optionGroups) ? body.optionGroups : []).map(Number).filter((id) => tpl.has(id)))];
+    const vals = [cat, JSON.stringify(name), JSON.stringify(clean3(body?.description, 300)), price, image, JSON.stringify(cleanOptions(body?.options)), body?.listed === false ? 0 : 1, cook,
+      body?.featured ? 1 : 0, days.length && days.length < 7 ? JSON.stringify(days) : null, JSON.stringify(groupsUsed)];
+    if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ?, featured = ?, days = ?, option_groups = ? WHERE id = ?').run(...vals, Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
     const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM items WHERE category_id = ?').get(cat).n;
-    const r = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, listed, cook_minutes, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...vals, sort);
+    const r = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, listed, cook_minutes, featured, days, option_groups, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...vals, sort);
     return send(res, 201, { id: Number(r.lastInsertRowid) });
   }
   if ((m = /^\/api\/admin\/items\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
@@ -563,6 +583,7 @@ async function adminApi(req, res, p, url) {
     const id = Number(m[1]);
     if (!db.prepare('SELECT id FROM items WHERE id = ?').get(id)) return send(res, 404, { error: 'NOT_FOUND' });
     if ('listed' in body) db.prepare('UPDATE items SET listed = ? WHERE id = ?').run(body.listed ? 1 : 0, id);
+    if ('featured' in body) db.prepare('UPDATE items SET featured = ? WHERE id = ?').run(body.featured ? 1 : 0, id);
     if ('soldOut' in body) {
       const mode = body.soldOut;
       db.prepare('UPDATE items SET sold_out = ?, sold_out_day = ? WHERE id = ?').run(mode === 'until' ? 1 : 0, mode === 'today' ? today() : null, id);
@@ -575,6 +596,24 @@ async function adminApi(req, res, p, url) {
     }
     if ('price' in body) { const pr = toSen(body.price); if (pr == null) return send(res, 400, { error: 'PRICE' }); db.prepare('UPDATE items SET price = ? WHERE id = ?').run(pr, id); }
     return send(res, 200, { item: adminItem(db.prepare('SELECT * FROM items WHERE id = ?').get(id)) });
+  }
+  // shared option groups
+  if (p === '/api/admin/option-templates' && req.method === 'GET') {
+    const used = {}; for (const i of db.prepare('SELECT option_groups FROM items').all()) for (const id of parseJSON(i.option_groups, [])) used[id] = (used[id] || 0) + 1;
+    return send(res, 200, { templates: [...templates().values()].map((t) => ({ ...tplGroup(t), id: t.id, usedBy: used[t.id] || 0 })) });
+  }
+  if ((p === '/api/admin/option-templates' && req.method === 'POST') || ((m = /^\/api\/admin\/option-templates\/(\d+)$/.exec(p)) && req.method === 'PUT')) {
+    const [g] = cleanOptions([{ ...body, id: 'x' }]);
+    if (!g) return send(res, 400, { error: 'NAME' });
+    const vals = [JSON.stringify(g.name), g.type, g.required ? 1 : 0, JSON.stringify(g.choices)];
+    if (m) { db.prepare('UPDATE option_templates SET name = ?, type = ?, required = ?, choices = ? WHERE id = ?').run(...vals, Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
+    const r = db.prepare('INSERT INTO option_templates (name, type, required, choices, sort) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM option_templates))').run(...vals);
+    return send(res, 201, { id: Number(r.lastInsertRowid) });
+  }
+  if ((m = /^\/api\/admin\/option-templates\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
+    const id = Number(m[1]); db.prepare('DELETE FROM option_templates WHERE id = ?').run(id);
+    for (const i of db.prepare('SELECT id, option_groups FROM items').all()) { const g = parseJSON(i.option_groups, []); if (g.includes(id)) db.prepare('UPDATE items SET option_groups = ? WHERE id = ?').run(JSON.stringify(g.filter((x) => x !== id)), i.id); }
+    return send(res, 200, { ok: true });
   }
   // photo upload: the browser already resized it; we just store the bytes
   if (p === '/api/admin/upload' && req.method === 'POST') {
