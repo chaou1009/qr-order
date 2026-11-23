@@ -603,11 +603,21 @@ async function adminApi(req, res, p, url) {
     const tpl = templates(); const groupsUsed = [...new Set((Array.isArray(body?.optionGroups) ? body.optionGroups : []).map(Number).filter((id) => tpl.has(id)))];
     const vals = [cat, JSON.stringify(name), JSON.stringify(clean3(body?.description, 300)), price, image, JSON.stringify(cleanOptions(body?.options)), body?.listed === false ? 0 : 1, cook,
       ...specialCols(body?.special), body?.special?.auto === false ? 0 : 1, days.length && days.length < 7 ? JSON.stringify(days) : null, JSON.stringify(groupsUsed)];
-    const pool = String(body?.stockPool || '').trim().slice(0, 40) || null;
-    const joinPool = (id) => { // joining a group: take over the group's current count
-      const prev = db.prepare('SELECT stock_pool FROM items WHERE id = ?').get(id)?.stock_pool || null;
-      db.prepare('UPDATE items SET stock_pool = ? WHERE id = ?').run(pool, id);
-      if (pool && pool !== prev) { const o = db.prepare('SELECT stock FROM items WHERE stock_pool = ? AND id != ? LIMIT 1').get(pool, id); if (o) db.prepare('UPDATE items SET stock = ? WHERE id = ?').run(o.stock, id); }
+    // Shared portions: the dishes ticked in "share with" form one group with this dish (one count of portions left).
+    const joinPool = (id) => {
+      if (!Array.isArray(body?.shareWith)) return;
+      const self = db.prepare('SELECT stock, stock_pool FROM items WHERE id = ?').get(id);
+      const mates = [...new Set(body.shareWith.map(Number))].filter((x) => x !== id).map((x) => db.prepare('SELECT id, stock, stock_pool FROM items WHERE id = ?').get(x)).filter(Boolean);
+      const unset = db.prepare('UPDATE items SET stock_pool = NULL WHERE id = ?');
+      const tidy = () => { for (const r of db.prepare('SELECT stock_pool AS k, COUNT(*) AS n FROM items WHERE stock_pool IS NOT NULL GROUP BY stock_pool HAVING n < 2').all()) db.prepare('UPDATE items SET stock_pool = NULL WHERE stock_pool = ?').run(r.k); };
+      if (!mates.length) { unset.run(id); tidy(); return; } // this dish leaves its group; the others stay together
+      if (self.stock_pool) for (const r of db.prepare('SELECT id FROM items WHERE stock_pool = ? AND id != ?').all(self.stock_pool, id)) if (!mates.some((x) => x.id === r.id)) unset.run(r.id);
+      const key = self.stock_pool || mates.find((x) => x.stock_pool)?.stock_pool || 'g' + id;
+      // the group's count: what the group already had, else this dish's own limit, else the first limited dish ticked
+      const holder = self.stock_pool ? self : mates.find((x) => x.stock_pool) || (self.stock != null ? self : mates.find((x) => x.stock != null) || self);
+      const st = holder.stock_pool ? db.prepare('SELECT stock FROM items WHERE stock_pool = ? LIMIT 1').get(holder.stock_pool).stock : holder.stock;
+      for (const x of [id, ...mates.map((m) => m.id)]) db.prepare('UPDATE items SET stock_pool = ?, stock = ? WHERE id = ?').run(key, st, x);
+      tidy(); // a group left with a single dish is no longer shared
     };
     if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ?, featured = ?, featured_day = ?, featured_days = ?, auto_special = ?, days = ?, option_groups = ? WHERE id = ?').run(...vals, Number(m[1])); joinPool(Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
     const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM items WHERE category_id = ?').get(cat).n;
