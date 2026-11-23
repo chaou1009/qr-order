@@ -75,7 +75,7 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(session_id)');
 if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === 'cook_minutes')) {
   db.exec('ALTER TABLE items ADD COLUMN cook_minutes INTEGER NOT NULL DEFAULT 15'); // usual time until served
 }
-for (const [col, def] of [['sold_out_day', 'TEXT'], ['stock', 'INTEGER'], ['featured', 'INTEGER NOT NULL DEFAULT 0'], ['featured_day', 'TEXT'], ['featured_days', 'TEXT'], ['auto_special', 'INTEGER NOT NULL DEFAULT 1'], ['days', 'TEXT'], ['option_groups', "TEXT NOT NULL DEFAULT '[]'"]]) {
+for (const [col, def] of [['sold_out_day', 'TEXT'], ['stock', 'INTEGER'], ['featured', 'INTEGER NOT NULL DEFAULT 0'], ['featured_day', 'TEXT'], ['featured_days', 'TEXT'], ['auto_special', 'INTEGER NOT NULL DEFAULT 1'], ['days', 'TEXT'], ['option_groups', "TEXT NOT NULL DEFAULT '[]'"], ['stock_pool', 'TEXT']]) {
   if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE items ADD COLUMN ${col} ${def}`);
 }
 db.exec(`
@@ -210,9 +210,24 @@ const today = () => dayOf(Date.now());
 // Sold out = marked "until further notice", or "today only" for today's date, or limited stock used up.
 const isSoldOut = (it) => !!it.sold_out || it.sold_out_day === today() || (it.stock != null && it.stock <= 0);
 const HOLD_MS = 5 * 60e3; // a cart reservation lasts 5 minutes after the guest's phone last checked in
-function heldByOthers(itemId, clientId) {
-  return db.prepare('SELECT COALESCE(SUM(qty), 0) AS n FROM holds WHERE item_id = ? AND client_id != ? AND expires_at > ?').get(itemId, clientId || '', Date.now()).n;
+// Shared portions: dishes with the same stock_pool name (e.g. "Ayam Penyet") draw from one count. Every member keeps the same
+// stock value, so ordering one lowers the number left on all of them.
+function poolIds(itemId) {
+  const it = db.prepare('SELECT stock_pool FROM items WHERE id = ?').get(itemId);
+  return it?.stock_pool ? db.prepare('SELECT id FROM items WHERE stock_pool = ?').all(it.stock_pool).map((r) => r.id) : [itemId];
 }
+const inList = (ids) => ids.map(() => '?').join(',');
+function heldByOthers(itemId, clientId) {
+  const ids = poolIds(itemId);
+  return db.prepare(`SELECT COALESCE(SUM(qty), 0) AS n FROM holds WHERE item_id IN (${inList(ids)}) AND client_id != ? AND expires_at > ?`).get(...ids, clientId || '', Date.now()).n;
+}
+function heldBySelf(itemId, clientId) {
+  const ids = poolIds(itemId);
+  return db.prepare(`SELECT COALESCE(SUM(qty), 0) AS n FROM holds WHERE item_id IN (${inList(ids)}) AND client_id = ?`).get(...ids, clientId).n;
+}
+// change the portions left on a dish (and on every dish sharing its count); delta, or an absolute value with set
+function changeStock(itemId, delta) { const ids = poolIds(itemId); db.prepare(`UPDATE items SET stock = MAX(0, stock + ?) WHERE stock IS NOT NULL AND id IN (${inList(ids)})`).run(delta, ...ids); }
+function setStock(itemId, st) { const ids = poolIds(itemId); db.prepare(`UPDATE items SET stock = ? WHERE id IN (${inList(ids)})`).run(st, ...ids); }
 // Live availability of limited / sold-out dishes for one guest: { itemId: { soldOut, stock, held } }
 function availability(clientId) {
   const out = {};
@@ -350,7 +365,7 @@ async function handle(req, res) {
     for (const [itemId, qty] of want) {
       const it = db.prepare('SELECT stock FROM items WHERE id = ?').get(itemId);
       if (!it || it.stock == null || !qty) continue;
-      const g = Math.min(qty, Math.max(0, it.stock - heldByOthers(itemId, clientId)));
+      const g = Math.min(qty, Math.max(0, it.stock - heldByOthers(itemId, clientId) - heldBySelf(itemId, clientId)));
       granted[itemId] = g;
       if (g) db.prepare('INSERT INTO holds (client_id, item_id, qty, expires_at) VALUES (?, ?, ?, ?)').run(clientId, itemId, g, Date.now() + HOLD_MS);
     }
@@ -408,13 +423,15 @@ async function handle(req, res) {
     catch (e) { return send(res, 409, { error: e.message, itemName: e.itemName }); }
     // Limited dishes: this order may use what is left minus what other guests currently hold in their carts.
     const perItem = new Map(); lines.forEach((l) => perItem.set(l.itemId, (perItem.get(l.itemId) || 0) + l.qty));
-    for (const [itemId, qty] of perItem) {
+    const perPool = new Map(); // dishes sharing one count are checked together
+    for (const [itemId, qty] of perItem) { const it = itemsById.get(itemId); if (it.stock == null) continue;
+      const k = it.stock_pool ? 'p:' + it.stock_pool : 'i:' + itemId; const e = perPool.get(k) || { itemId, qty: 0 }; e.qty += qty; perPool.set(k, e); }
+    for (const { itemId, qty } of perPool.values()) {
       const it = itemsById.get(itemId);
-      if (it.stock == null) continue;
       const left = Math.max(0, it.stock - heldByOthers(itemId, clientId));
       if (qty > left) return send(res, 409, { error: 'STOCK', itemName: parseJSON(it.name, {}), left });
     }
-    for (const [itemId, qty] of perItem) if (itemsById.get(itemId).stock != null) db.prepare('UPDATE items SET stock = MAX(0, stock - ?) WHERE id = ?').run(qty, itemId);
+    for (const [itemId, qty] of perItem) if (itemsById.get(itemId).stock != null) changeStock(itemId, -qty);
     db.prepare('DELETE FROM holds WHERE client_id = ?').run(clientId);
     const total = lines.reduce((s, l) => s + l.unit * l.qty, 0);
     const now = Date.now(); const day = dayOf(now);
@@ -481,7 +498,7 @@ async function handle(req, res) {
       const prev = db.prepare('SELECT status, items FROM orders WHERE id = ?').get(Number(m[1]));
       if (prev && (prev.status === 'void') !== (status === 'void')) { // voiding gives limited portions back; restoring takes them again
         const sign = status === 'void' ? 1 : -1;
-        for (const l of parseJSON(prev.items, [])) db.prepare('UPDATE items SET stock = MAX(0, stock + ?) WHERE id = ? AND stock IS NOT NULL').run(sign * l.qty, l.itemId);
+        for (const l of parseJSON(prev.items, [])) changeStock(l.itemId, sign * l.qty);
       }
       db.prepare('UPDATE orders SET status = ?, done_at = ? WHERE id = ?').run(status, status === 'new' ? null : Date.now(), Number(m[1]));
       return send(res, 200, { ok: true });
@@ -540,7 +557,7 @@ function cleanOptions(groups) {
 }
 const adminItem = (i) => ({ id: i.id, categoryId: i.category_id, name: parseJSON(i.name, {}), description: parseJSON(i.description, {}), price: i.price,
   image: i.image, options: parseJSON(i.options, []), listed: !!i.listed, soldOut: i.sold_out ? 'until' : i.sold_out_day === today() ? 'today' : 'none',
-  stock: i.stock, cookMinutes: i.cook_minutes || 15, sort: i.sort, special: specialInfo(i), days: parseJSON(i.days, []) || [], optionGroups: parseJSON(i.option_groups, []), held: i.stock == null ? 0 : heldByOthers(i.id, '') });
+  stock: i.stock, cookMinutes: i.cook_minutes || 15, sort: i.sort, special: specialInfo(i), days: parseJSON(i.days, []) || [], optionGroups: parseJSON(i.option_groups, []), stockPool: i.stock_pool || '', held: i.stock == null ? 0 : heldByOthers(i.id, '') });
 
 async function adminApi(req, res, p, url) {
   const body = req.method === 'GET' ? null : await readBody(req, 6 * 1024 * 1024).catch(() => null);
@@ -586,9 +603,16 @@ async function adminApi(req, res, p, url) {
     const tpl = templates(); const groupsUsed = [...new Set((Array.isArray(body?.optionGroups) ? body.optionGroups : []).map(Number).filter((id) => tpl.has(id)))];
     const vals = [cat, JSON.stringify(name), JSON.stringify(clean3(body?.description, 300)), price, image, JSON.stringify(cleanOptions(body?.options)), body?.listed === false ? 0 : 1, cook,
       ...specialCols(body?.special), body?.special?.auto === false ? 0 : 1, days.length && days.length < 7 ? JSON.stringify(days) : null, JSON.stringify(groupsUsed)];
-    if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ?, featured = ?, featured_day = ?, featured_days = ?, auto_special = ?, days = ?, option_groups = ? WHERE id = ?').run(...vals, Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
+    const pool = String(body?.stockPool || '').trim().slice(0, 40) || null;
+    const joinPool = (id) => { // joining a group: take over the group's current count
+      const prev = db.prepare('SELECT stock_pool FROM items WHERE id = ?').get(id)?.stock_pool || null;
+      db.prepare('UPDATE items SET stock_pool = ? WHERE id = ?').run(pool, id);
+      if (pool && pool !== prev) { const o = db.prepare('SELECT stock FROM items WHERE stock_pool = ? AND id != ? LIMIT 1').get(pool, id); if (o) db.prepare('UPDATE items SET stock = ? WHERE id = ?').run(o.stock, id); }
+    };
+    if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ?, featured = ?, featured_day = ?, featured_days = ?, auto_special = ?, days = ?, option_groups = ? WHERE id = ?').run(...vals, Number(m[1])); joinPool(Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
     const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM items WHERE category_id = ?').get(cat).n;
     const r = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, listed, cook_minutes, featured, featured_day, featured_days, auto_special, days, option_groups, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...vals, sort);
+    joinPool(Number(r.lastInsertRowid));
     return send(res, 201, { id: Number(r.lastInsertRowid) });
   }
   if ((m = /^\/api\/admin\/items\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
@@ -607,12 +631,12 @@ async function adminApi(req, res, p, url) {
     if ('soldOut' in body) {
       const mode = body.soldOut;
       db.prepare('UPDATE items SET sold_out = ?, sold_out_day = ? WHERE id = ?').run(mode === 'until' ? 1 : 0, mode === 'today' ? today() : null, id);
-      if (mode === 'none') db.prepare('UPDATE items SET stock = NULL WHERE id = ? AND stock <= 0').run(id); // back on sale: drop an empty limit
+      if (mode === 'none' && db.prepare('SELECT stock FROM items WHERE id = ?').get(id).stock <= 0) setStock(id, null); // back on sale: drop an empty limit
     }
     if ('stock' in body) {
       const st = body.stock === null || body.stock === '' ? null : Math.max(0, Math.min(9999, Math.floor(Number(body.stock))));
       if (st !== null && !Number.isFinite(st)) return send(res, 400, { error: 'STOCK' });
-      db.prepare('UPDATE items SET stock = ? WHERE id = ?').run(st, id);
+      setStock(id, st);
     }
     if ('price' in body) { const pr = toSen(body.price); if (pr == null) return send(res, 400, { error: 'PRICE' }); db.prepare('UPDATE items SET price = ? WHERE id = ?').run(pr, id); }
     return send(res, 200, { item: adminItem(db.prepare('SELECT * FROM items WHERE id = ?').get(id)) });
