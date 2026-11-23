@@ -422,11 +422,13 @@ function renderPage() {
   document.title = config.name || 'Menu';
   const initial = (config.name || 'R').trim().charAt(0).toUpperCase();
   const hasSp = menu.some((c) => c.items.some((i) => i.featured));
-  const tabs = menu.map((c, i) => `<button class="tab${i === 0 && !hasSp ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
+  // A dish shown in Today's Specials is not repeated in its own category; it goes back there once the special ends.
+  const cats = menu.map((c) => ({ ...c, items: c.items.filter((i) => !i.featured) })).filter((c) => c.items.length);
+  const tabs = cats.map((c, i) => `<button class="tab${i === 0 && !hasSp ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
   const specials = menu.flatMap((c) => c.items).filter((i) => i.featured);
   const specialTab = specials.length ? `<button class="tab tab-sp active" data-cat="special">${ICON.star}${esc(t('specials'))}</button>` : '';
   const specialSec = specials.length ? `<section class="section specials" id="cat-special" data-cat="special"><h2><span class="sp-ic">${ICON.star}</span>${esc(t('specials'))}<span class="cnt">${specials.length}</span></h2><p class="sp-sub">${esc(t('specialsSub'))}</p>${specials.map(itemRow).join('')}</section>` : '';
-  const sections = menu.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2><span class="bar"></span>${esc(L(c.name))}<span class="cnt">${c.items.length}</span></h2>${c.items.map(itemRow).join('')}</section>`).join('');
+  const sections = cats.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2><span class="bar"></span>${esc(L(c.name))}<span class="cnt">${c.items.length}</span></h2>${c.items.map(itemRow).join('')}</section>`).join('');
   $('app').innerHTML = `
     <header class="hero">
       <div id="festBar"></div>
@@ -635,11 +637,12 @@ async function syncHolds(force) {
 setInterval(() => { if (document.visibilityState === 'visible' && cart.some((l) => itemsById.get(l.itemId)?.stock != null)) syncHolds(true); }, 60000);
 // Live availability from the server: { itemId: { soldOut, stock, held } } (dishes not listed are normal).
 function applyAvail(avail) {
-  if (!avail) return; let changed = false;
+  if (!avail) return; let changed = false, hide = false;
   for (const it of itemsById.values()) {
     const a = avail[it.id] || { soldOut: false, stock: null, held: 0 };
-    if (it.soldOut !== a.soldOut || it.stock !== a.stock || (it.held || 0) !== a.held) { it.soldOut = a.soldOut; it.stock = a.stock; it.held = a.held; changed = true; }
+    if (it.soldOut !== a.soldOut || it.stock !== a.stock || (it.held || 0) !== a.held) { if (config.hideSoldOut && a.soldOut && !it.soldOut) hide = true; it.soldOut = a.soldOut; it.stock = a.stock; it.held = a.held; changed = true; }
   }
+  if (hide) return reloadMenu().catch(() => {}); // shop hides sold-out dishes: take it off the menu
   if (changed) refreshRows();
 }
 const lineUnit = (l) => unitPrice(itemsById.get(l.itemId), l.options);

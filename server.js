@@ -75,7 +75,7 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(session_id)');
 if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === 'cook_minutes')) {
   db.exec('ALTER TABLE items ADD COLUMN cook_minutes INTEGER NOT NULL DEFAULT 15'); // usual time until served
 }
-for (const [col, def] of [['sold_out_day', 'TEXT'], ['stock', 'INTEGER'], ['featured', 'INTEGER NOT NULL DEFAULT 0'], ['days', 'TEXT'], ['option_groups', "TEXT NOT NULL DEFAULT '[]'"]]) {
+for (const [col, def] of [['sold_out_day', 'TEXT'], ['stock', 'INTEGER'], ['featured', 'INTEGER NOT NULL DEFAULT 0'], ['featured_day', 'TEXT'], ['featured_days', 'TEXT'], ['auto_special', 'INTEGER NOT NULL DEFAULT 1'], ['days', 'TEXT'], ['option_groups', "TEXT NOT NULL DEFAULT '[]'"]]) {
   if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE items ADD COLUMN ${col} ${def}`);
 }
 db.exec(`
@@ -226,6 +226,22 @@ function availability(clientId) {
 const DOW = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 const weekday = () => DOW[new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(new Date())];
 const onToday = (it) => { const d = parseJSON(it.days, null); return !Array.isArray(d) || !d.length || d.includes(weekday()); };
+// Today's special: always (until removed), today only (ends at midnight), or on fixed weekdays.
+const hasDays = (it) => { const d = parseJSON(it.days, null); return Array.isArray(d) && d.length > 0; };
+// Dishes sold only on certain weekdays become a special automatically on those days, unless staff turned that off.
+const autoSpecial = (it) => !!it.auto_special && hasDays(it) && onToday(it);
+const specialNow = (it) => !!it.featured || it.featured_day === today() || (parseJSON(it.featured_days, []) || []).includes(weekday()) || autoSpecial(it);
+function specialInfo(it) {
+  const days = parseJSON(it.featured_days, []) || [];
+  const mode = it.featured ? 'always' : days.length ? 'weekly' : it.featured_day === today() ? 'today' : 'none';
+  return { mode, days, active: specialNow(it), auto: !!it.auto_special, autoActive: autoSpecial(it) };
+}
+function specialCols(sp) {
+  const mode = ['always', 'today', 'weekly'].includes(sp?.mode) ? sp.mode : 'none';
+  const days = [...new Set((Array.isArray(sp?.days) ? sp.days : []).map(Number).filter((d) => d >= 0 && d <= 6))].sort();
+  if (mode === 'weekly' && !days.length) return [0, null, null];
+  return [mode === 'always' ? 1 : 0, mode === 'today' ? today() : null, mode === 'weekly' ? JSON.stringify(days) : null];
+}
 const templates = () => new Map(db.prepare('SELECT * FROM option_templates ORDER BY sort, id').all().map((t) => [t.id, t]));
 const tplGroup = (t) => ({ id: 't' + t.id, name: parseJSON(t.name, {}), type: t.type, required: !!t.required, choices: parseJSON(t.choices, []), shared: true });
 // A dish's option groups: the shared ones it uses first, then its own.
@@ -235,14 +251,15 @@ function itemOptions(it, tpl = templates()) {
 }
 function loadMenu(clientId) {
   const cats = db.prepare('SELECT * FROM categories ORDER BY sort, id').all();
-  const items = db.prepare('SELECT * FROM items WHERE listed = 1 ORDER BY sort, id').all().filter(onToday);
+  const hideSold = getSetting('hideSoldOut', false) === true;
+  const items = db.prepare('SELECT * FROM items WHERE listed = 1 ORDER BY sort, id').all().filter((i) => onToday(i) && !(hideSold && isSoldOut(i)));
   const tpl = templates();
   return cats.map((c) => ({
     id: c.id, name: parseJSON(c.name, {}),
     items: items.filter((i) => i.category_id === c.id).map((i) => ({
       id: i.id, name: parseJSON(i.name, {}), description: parseJSON(i.description, {}),
       price: i.price, image: i.image, soldOut: isSoldOut(i), options: itemOptions(i, tpl), cookMinutes: i.cook_minutes || 15,
-      featured: !!i.featured, days: parseJSON(i.days, null), stock: i.stock, held: i.stock == null ? 0 : heldByOthers(i.id, clientId),
+      featured: specialNow(i), days: parseJSON(i.days, null), stock: i.stock, held: i.stock == null ? 0 : heldByOthers(i.id, clientId),
     })),
   })).filter((c) => c.items.length);
 }
@@ -502,7 +519,7 @@ async function handle(req, res) {
 }
 
 // ---------- back office (admin) API ----------
-const shopInfo = () => ({ name: getSetting('shopName', '') || RESTAURANT_NAME, logo: getSetting('logo', '') || null });
+const shopInfo = () => ({ name: getSetting('shopName', '') || RESTAURANT_NAME, logo: getSetting('logo', '') || null, hideSoldOut: getSetting('hideSoldOut', false) === true });
 function themeInfo() {
   const theme = getSetting('theme', 'default');
   return { theme, banner: getSetting('banner:' + theme, '') || null, effects: getSetting('effects', true) !== false };
@@ -523,7 +540,7 @@ function cleanOptions(groups) {
 }
 const adminItem = (i) => ({ id: i.id, categoryId: i.category_id, name: parseJSON(i.name, {}), description: parseJSON(i.description, {}), price: i.price,
   image: i.image, options: parseJSON(i.options, []), listed: !!i.listed, soldOut: i.sold_out ? 'until' : i.sold_out_day === today() ? 'today' : 'none',
-  stock: i.stock, cookMinutes: i.cook_minutes || 15, sort: i.sort, featured: !!i.featured, days: parseJSON(i.days, []) || [], optionGroups: parseJSON(i.option_groups, []), held: i.stock == null ? 0 : heldByOthers(i.id, '') });
+  stock: i.stock, cookMinutes: i.cook_minutes || 15, sort: i.sort, special: specialInfo(i), days: parseJSON(i.days, []) || [], optionGroups: parseJSON(i.option_groups, []), held: i.stock == null ? 0 : heldByOthers(i.id, '') });
 
 async function adminApi(req, res, p, url) {
   const body = req.method === 'GET' ? null : await readBody(req, 6 * 1024 * 1024).catch(() => null);
@@ -531,7 +548,7 @@ async function adminApi(req, res, p, url) {
   if (p === '/api/admin/menu' && req.method === 'GET') {
     const cats = db.prepare('SELECT * FROM categories ORDER BY sort, id').all();
     const items = db.prepare('SELECT * FROM items ORDER BY sort, id').all();
-    return send(res, 200, { categories: cats.map((c) => ({ id: c.id, name: parseJSON(c.name, {}), items: items.filter((i) => i.category_id === c.id).map(adminItem) })) });
+    return send(res, 200, { hideSoldOut: getSetting('hideSoldOut', false) === true, categories: cats.map((c) => ({ id: c.id, name: parseJSON(c.name, {}), items: items.filter((i) => i.category_id === c.id).map(adminItem) })) });
   }
   // categories
   if (p === '/api/admin/categories' && req.method === 'POST') {
@@ -568,10 +585,10 @@ async function adminApi(req, res, p, url) {
     const days = [...new Set((Array.isArray(body?.days) ? body.days : []).map(Number).filter((d) => d >= 0 && d <= 6))].sort();
     const tpl = templates(); const groupsUsed = [...new Set((Array.isArray(body?.optionGroups) ? body.optionGroups : []).map(Number).filter((id) => tpl.has(id)))];
     const vals = [cat, JSON.stringify(name), JSON.stringify(clean3(body?.description, 300)), price, image, JSON.stringify(cleanOptions(body?.options)), body?.listed === false ? 0 : 1, cook,
-      body?.featured ? 1 : 0, days.length && days.length < 7 ? JSON.stringify(days) : null, JSON.stringify(groupsUsed)];
-    if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ?, featured = ?, days = ?, option_groups = ? WHERE id = ?').run(...vals, Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
+      ...specialCols(body?.special), body?.special?.auto === false ? 0 : 1, days.length && days.length < 7 ? JSON.stringify(days) : null, JSON.stringify(groupsUsed)];
+    if (m) { db.prepare('UPDATE items SET category_id = ?, name = ?, description = ?, price = ?, image = ?, options = ?, listed = ?, cook_minutes = ?, featured = ?, featured_day = ?, featured_days = ?, auto_special = ?, days = ?, option_groups = ? WHERE id = ?').run(...vals, Number(m[1])); return send(res, 200, { id: Number(m[1]) }); }
     const sort = db.prepare('SELECT COALESCE(MAX(sort), 0) + 1 AS n FROM items WHERE category_id = ?').get(cat).n;
-    const r = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, listed, cook_minutes, featured, days, option_groups, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...vals, sort);
+    const r = db.prepare('INSERT INTO items (category_id, name, description, price, image, options, listed, cook_minutes, featured, featured_day, featured_days, auto_special, days, option_groups, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...vals, sort);
     return send(res, 201, { id: Number(r.lastInsertRowid) });
   }
   if ((m = /^\/api\/admin\/items\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
@@ -583,7 +600,10 @@ async function adminApi(req, res, p, url) {
     const id = Number(m[1]);
     if (!db.prepare('SELECT id FROM items WHERE id = ?').get(id)) return send(res, 404, { error: 'NOT_FOUND' });
     if ('listed' in body) db.prepare('UPDATE items SET listed = ? WHERE id = ?').run(body.listed ? 1 : 0, id);
-    if ('featured' in body) db.prepare('UPDATE items SET featured = ? WHERE id = ?').run(body.featured ? 1 : 0, id);
+    if ('special' in body) {
+      if (body.special.mode !== undefined) db.prepare('UPDATE items SET featured = ?, featured_day = ?, featured_days = ? WHERE id = ?').run(...specialCols(body.special), id);
+      if ('auto' in body.special) db.prepare('UPDATE items SET auto_special = ? WHERE id = ?').run(body.special.auto ? 1 : 0, id);
+    }
     if ('soldOut' in body) {
       const mode = body.soldOut;
       db.prepare('UPDATE items SET sold_out = ?, sold_out_day = ? WHERE id = ?').run(mode === 'until' ? 1 : 0, mode === 'today' ? today() : null, id);
@@ -597,6 +617,7 @@ async function adminApi(req, res, p, url) {
     if ('price' in body) { const pr = toSen(body.price); if (pr == null) return send(res, 400, { error: 'PRICE' }); db.prepare('UPDATE items SET price = ? WHERE id = ?').run(pr, id); }
     return send(res, 200, { item: adminItem(db.prepare('SELECT * FROM items WHERE id = ?').get(id)) });
   }
+  if (p === '/api/admin/menu-settings' && req.method === 'POST') { if ('hideSoldOut' in body) setSetting('hideSoldOut', !!body.hideSoldOut); return send(res, 200, { hideSoldOut: getSetting('hideSoldOut', false) === true }); }
   // shared option groups
   if (p === '/api/admin/option-templates' && req.method === 'GET') {
     const used = {}; for (const i of db.prepare('SELECT option_groups FROM items').all()) for (const id of parseJSON(i.option_groups, [])) used[id] = (used[id] || 0) + 1;
