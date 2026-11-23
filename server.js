@@ -266,11 +266,12 @@ function stockView(it, clientId) {
   const others = portionsLeft(it, clientId) ?? total, withMine = portionsLeft(it, clientId, true) ?? others;
   return { stock: total, held: Math.max(0, total - others), mine: Math.max(0, others - withMine) };
 }
-// Ingredients with a daily amount go back to it at the start of each day (shop time zone).
+// An ingredient count is for the day it was typed in: from the next day (shop time zone) it goes back to no limit.
 function dailyReset() {
   const d = today();
   if (dailyReset.day === d) return; dailyReset.day = d;
-  db.prepare('UPDATE ingredients SET stock = daily, reset_day = ? WHERE daily IS NOT NULL AND (reset_day IS NULL OR reset_day != ?)').run(d, d);
+  db.prepare('UPDATE ingredients SET reset_day = ? WHERE reset_day IS NULL').run(d); // counts typed before this rule last until tonight
+  db.prepare('UPDATE ingredients SET stock = NULL WHERE stock IS NOT NULL AND reset_day != ?').run(d);
 }
 // take portions off a dish's own limit and off every ingredient it uses (negative delta), or give them back
 function changeStock(itemId, delta) {
@@ -691,10 +692,10 @@ async function adminApi(req, res, p, url) {
     const num = (v) => v === null || v === '' || v === undefined ? null : Math.max(0, Math.min(99999, Math.floor(Number(v) || 0)));
     const fields = {}; if ('name' in body) { const n = String(body.name || '').trim().slice(0, 40); if (!n) return send(res, 400, { error: 'NAME' }); fields.name = n; }
     if ('stock' in body) fields.stock = num(body.stock);
-    if ('daily' in body) { fields.daily = num(body.daily); fields.reset_day = today(); } // today's count stays as typed; the daily amount starts tomorrow
+    if ('stock' in body) fields.reset_day = today(); // the count lasts until midnight
     if (m) { const id = Number(m[1]); const keys = Object.keys(fields); if (keys.length) db.prepare(`UPDATE ingredients SET ${keys.map((k) => k + ' = ?').join(', ')} WHERE id = ?`).run(...keys.map((k) => fields[k]), id); return send(res, 200, { id }); }
     if (!fields.name) return send(res, 400, { error: 'NAME' });
-    const r = db.prepare('INSERT INTO ingredients (name, stock, daily, reset_day, sort) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM ingredients))').run(fields.name, fields.stock ?? null, fields.daily ?? null, today());
+    const r = db.prepare('INSERT INTO ingredients (name, stock, daily, reset_day, sort) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(sort), 0) + 1 FROM ingredients))').run(fields.name, fields.stock ?? null, null, today());
     return send(res, 201, { id: Number(r.lastInsertRowid) });
   }
   if ((m = /^\/api\/admin\/ingredients\/(\d+)$/.exec(p)) && req.method === 'DELETE') {
