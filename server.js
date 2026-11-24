@@ -831,6 +831,28 @@ async function adminApi(req, res, p, url) {
   return send(res, 404, { error: 'NOT_FOUND' });
 }
 
+// Daily backup: BACKUP_DIR (e.g. a Google Drive / OneDrive folder) gets one folder per day with the
+// database and dish photos; folders older than BACKUP_KEEP_DAYS (default 30) are removed.
+const BACKUP_DIR = process.env.BACKUP_DIR || '';
+const BACKUP_KEEP = Math.max(1, Number(process.env.BACKUP_KEEP_DAYS) || 30);
+function backupNow() {
+  if (!BACKUP_DIR) return;
+  try {
+    const day = dayOf(Date.now()), dest = path.join(BACKUP_DIR, 'qr-order-' + day);
+    if (fs.existsSync(path.join(dest, 'restaurant.db'))) return; // already done today
+    fs.mkdirSync(dest, { recursive: true });
+    const tmp = path.join(dest, 'restaurant.db.part');
+    try { fs.unlinkSync(tmp); } catch {}
+    db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`); // consistent copy while the shop is running
+    fs.renameSync(tmp, path.join(dest, 'restaurant.db'));
+    fs.cpSync(UPLOAD_DIR, path.join(dest, 'uploads'), { recursive: true });
+    const old = fs.readdirSync(BACKUP_DIR).filter((n) => /^qr-order-\d{4}-\d{2}-\d{2}$/.test(n)).sort();
+    for (const n of old.slice(0, Math.max(0, old.length - BACKUP_KEEP))) fs.rmSync(path.join(BACKUP_DIR, n), { recursive: true, force: true });
+    console.log('Backup saved to ' + dest);
+  } catch (e) { console.error('Backup failed:', e.message); }
+}
+if (BACKUP_DIR) { setTimeout(backupNow, 60e3).unref(); setInterval(backupNow, 3600e3).unref(); }
+
 http.createServer((req, res) => {
   handle(req, res).catch((e) => { console.error(e); if (!res.headersSent) send(res, 500, { error: 'SERVER' }); });
 }).listen(PORT, () => {
