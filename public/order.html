@@ -861,7 +861,8 @@ function applyTheme() {
 // A small canvas animation inside the banner, plus a short full-screen shower when the page opens.
 const FX = {
   christmas: { n: 34, make: (w, h) => ({ x: Math.random() * w, y: -10, r: 1.4 + Math.random() * 2.6, vy: .35 + Math.random() * .8, a: Math.random() * 6, c: '#fff', soft: true }), draw: dot },
-  cny: { n: 26, make: (w) => { const gold = Math.random() < .4; return { x: Math.random() * w, y: -10, r: gold ? 2.2 : 4 + Math.random() * 3, vy: .5 + Math.random() * .8, a: Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .06, c: gold ? '#ffd24a' : ['#ff6b6b', '#ff9aa2', '#e63946'][Math.floor(Math.random() * 3)], petal: !gold }; }, draw: (g, p) => p.petal ? petal(g, p) : dot(g, p) },
+  // CNY: small gold coins (with the square hole) and little red packets, drifting down and gently turning
+  cny: { n: 20, make: (w) => { const coin = Math.random() < .6; return { x: Math.random() * w, y: -14, r: coin ? 4 + Math.random() * 2.5 : 5 + Math.random() * 2.5, vy: coin ? .6 + Math.random() * .7 : .45 + Math.random() * .5, a: Math.random() * 6, rot: (Math.random() - .5) * .8, vr: (Math.random() - .5) * .03, spin: .03 + Math.random() * .04, coin }; }, draw: (g, p) => p.coin ? coin(g, p) : hongbao(g, p) },
   merdeka: { n: 34, make: (w) => ({ x: Math.random() * w, y: -10, r: 3 + Math.random() * 3, vy: .8 + Math.random() * 1.1, a: Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .2, c: ['#c8102e', '#0b2a7a', '#ffd400', '#ffffff'][Math.floor(Math.random() * 4)] }), draw: confetti },
   raya: { n: 22, make: (w) => ({ x: Math.random() * w, y: -10, r: 2.5 + Math.random() * 3, vy: .3 + Math.random() * .6, a: Math.random() * 6, rot: Math.random() * 6, vr: .01, c: '#ffd86b' }), draw: star },
   deepavali: { n: 30, up: true, make: (w, h) => ({ x: Math.random() * w, y: h + 10, r: 1.2 + Math.random() * 2.2, vy: -(.4 + Math.random() * .9), a: Math.random() * 6, c: ['#ffd166', '#ff9f1c', '#ffe8a3'][Math.floor(Math.random() * 3)], glow: true }), draw: dot },
@@ -869,6 +870,18 @@ const FX = {
 };
 function dot(g, p) { if (p.glow) { g.shadowColor = p.c; g.shadowBlur = 8; } else if (p.soft) { g.shadowColor = 'rgba(30,70,110,.5)'; g.shadowBlur = 4; } g.fillStyle = p.c; g.globalAlpha = p.alpha ?? .9; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); g.shadowBlur = 0; }
 function petal(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.c; g.globalAlpha = .9; g.beginPath(); g.ellipse(0, 0, p.r, p.r * .55, 0, 0, 7); g.fill(); g.restore(); }
+function coin(g, p) { // gold coin seen edge-on as it flips: squash x by cos
+  p.f = (p.f || 0) + p.spin; const sx = Math.cos(p.f); const r = p.r;
+  g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.scale(Math.max(.12, Math.abs(sx)), 1); g.globalAlpha = .95;
+  const gr = g.createRadialGradient(-r * .35, -r * .35, r * .1, 0, 0, r); gr.addColorStop(0, sx > 0 ? '#fff3b0' : '#ffe27a'); gr.addColorStop(.6, '#f2be2e'); gr.addColorStop(1, '#b8860b');
+  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
+  g.strokeStyle = '#9a6a00'; g.lineWidth = Math.max(.6, r * .12); g.beginPath(); g.arc(0, 0, r * .78, 0, 7); g.stroke();
+  const q = r * .26; g.fillStyle = '#9a6a00'; g.fillRect(-q, -q, q * 2, q * 2); g.restore(); }
+function hongbao(g, p) { // little red packet with a gold seal, swaying
+  const w = p.r * 1.3, h = p.r * 1.9; g.save(); g.translate(p.x, p.y); g.rotate(p.rot + Math.sin(p.a * 1.3) * .35); g.globalAlpha = .95;
+  g.fillStyle = '#d7191f'; g.beginPath(); g.roundRect ? g.roundRect(-w / 2, -h / 2, w, h, w * .14) : g.rect(-w / 2, -h / 2, w, h); g.fill(); g.strokeStyle = '#f5c542'; g.lineWidth = .7; g.stroke();
+  g.fillStyle = '#b10f16'; g.beginPath(); g.moveTo(-w / 2, -h / 2); g.lineTo(w / 2, -h / 2); g.lineTo(w / 2, -h * .12); g.quadraticCurveTo(0, h * .08, -w / 2, -h * .12); g.closePath(); g.fill();
+  g.fillStyle = '#ffd24a'; g.beginPath(); g.arc(0, -h * .02, w * .2, 0, 7); g.fill(); g.restore(); }
 function confetti(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.scale(1, Math.cos(p.a * 2)); g.fillStyle = p.c; g.globalAlpha = .95; g.fillRect(-p.r, -p.r * .45, p.r * 2, p.r * .9); g.restore(); }
 function star(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.c; g.globalAlpha = .55 + .45 * Math.abs(Math.sin(p.a * 2)); g.beginPath();
   for (let i = 0; i < 10; i++) { const r = i % 2 ? p.r * .45 : p.r; g.lineTo(Math.cos(i * Math.PI / 5 - Math.PI / 2) * r, Math.sin(i * Math.PI / 5 - Math.PI / 2) * r); } g.fill(); g.restore(); }
