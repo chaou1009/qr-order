@@ -97,3 +97,12 @@ RESTAURANT_NAME="店名" STAFF_PIN=8888 node server.js
 | `PUBLIC_URL` | 正式网址，二维码会用它 | 空（自动用当前网址） |
 
 品牌主色可在 `public/app.css` 顶部的 `--accent` 修改。
+
+## Windows shop computer (go-live)
+
+The `windows/` folder holds the Windows installer used on the shop's POS computer (see `windows/安装说明.txt`, in Chinese).
+The delivery zip puts these files next to `server.js`, plus `runtime/node.exe`, `runtime/cloudflared.exe` and a starter menu.
+
+- `1-安装.bat`: copies the program to `C:\QROrder`, brings in the demo menu or a backup zip, asks for the web address and staff PIN (`config.ini`), turns off sleep, registers the "QR Ordering Server" startup task (runs as SYSTEM, restarts itself), and installs the Cloudflare Tunnel service from a pasted token.
+- `更新.bat`: downloads the `main` branch from GitHub, keeps a safety copy of the database, installs, and rolls back if the new version does not start. It refuses an older `package.json` version, so bump `version` with each release.
+- `重启.bat`: restarts the server and the tunnel.
