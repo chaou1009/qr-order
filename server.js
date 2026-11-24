@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
+const zlib = require('node:zlib');
 
 const PORT = Number(process.env.PORT || 3000);
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -800,6 +801,12 @@ async function adminApi(req, res, p, url) {
     db.prepare('SELECT id FROM table_sessions WHERE table_id = ? AND closed_at IS NULL').all(id).forEach((s) => closeSession(s.id, 'regen')); // old QR stops working
     return send(res, 200, { ok: true });
   }
+  // manual backup: a zip with data/restaurant.db and data/uploads, ready to copy back over the data folder
+  if (p === '/api/admin/backup' && req.method === 'GET') {
+    const zip = backupZip(), name = `qr-order-backup-${dayOf(Date.now())}.zip`;
+    res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Length': zip.length, 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store' });
+    return res.end(zip);
+  }
   // before opening day: remove test orders, calls and table visits; menu, tables and settings stay
   if (p === '/api/admin/clear-orders' && req.method === 'POST') {
     if (body?.confirm !== 'CLEAR') return send(res, 400, { error: 'CONFIRM' });
@@ -829,6 +836,30 @@ async function adminApi(req, res, p, url) {
     return send(res, 200, { ...themeInfo(), themes: THEMES, banners: Object.fromEntries(THEMES.map((t) => [t, getSetting('banner:' + t, '') || null])) });
   }
   return send(res, 404, { error: 'NOT_FOUND' });
+}
+
+// A minimal zip writer (no extra packages): deflated files with UTF-8 names.
+function makeZip(files) {
+  const parts = [], central = []; let off = 0;
+  const dt = new Date(), dosTime = (dt.getHours() << 11) | (dt.getMinutes() << 5) | (dt.getSeconds() >> 1), dosDate = ((dt.getFullYear() - 1980) << 9) | ((dt.getMonth() + 1) << 5) | dt.getDate();
+  for (const f of files) {
+    const name = Buffer.from(f.name, 'utf8'), data = zlib.deflateRawSync(f.data), crc = zlib.crc32(f.data);
+    const h = Buffer.alloc(30); h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(0x800, 6); h.writeUInt16LE(8, 8);
+    h.writeUInt16LE(dosTime, 10); h.writeUInt16LE(dosDate, 12); h.writeUInt32LE(crc, 14); h.writeUInt32LE(data.length, 18); h.writeUInt32LE(f.data.length, 22); h.writeUInt16LE(name.length, 26);
+    const c = Buffer.alloc(46); c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6); c.writeUInt16LE(0x800, 8); c.writeUInt16LE(8, 10);
+    c.writeUInt16LE(dosTime, 12); c.writeUInt16LE(dosDate, 14); c.writeUInt32LE(crc, 16); c.writeUInt32LE(data.length, 20); c.writeUInt32LE(f.data.length, 24); c.writeUInt16LE(name.length, 28); c.writeUInt32LE(off, 42);
+    parts.push(h, name, data); central.push(c, name); off += 30 + name.length + data.length;
+  }
+  const cd = Buffer.concat(central), e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(files.length, 8); e.writeUInt16LE(files.length, 10); e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(off, 16);
+  return Buffer.concat([...parts, cd, e]);
+}
+function backupZip() {
+  const tmp = path.join(DATA_DIR, `backup-${process.pid}.tmp`);
+  try { fs.unlinkSync(tmp); } catch {}
+  db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`);
+  const files = [{ name: 'data/restaurant.db', data: fs.readFileSync(tmp) }]; fs.unlinkSync(tmp);
+  for (const n of fs.readdirSync(UPLOAD_DIR)) { const f = path.join(UPLOAD_DIR, n); if (fs.statSync(f).isFile()) files.push({ name: 'data/uploads/' + n, data: fs.readFileSync(f) }); }
+  return makeZip(files);
 }
 
 // Daily backup: BACKUP_DIR (e.g. a Google Drive / OneDrive folder) gets one folder per day with the
