@@ -3,3 +3,5 @@ runtime/
 node_modules/
 public/uploads/*
 !public/uploads/.gitkeep
+windows/tools/starter-data/
+config.ini
