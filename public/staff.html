@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1d1b19">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>接单平板</title>
+<title>Orders</title>
 <link rel="stylesheet" href="/app.css">
 <style>
   body { background: var(--bg); min-height: 100vh; }
@@ -42,6 +42,10 @@
   .done-btn { width: 100%; margin-top: 10px; border: 0; background: #1e9e4a; color: #fff; font-weight: 800; font-size: 17px; padding: 14px; border-radius: 12px; display: flex; justify-content: center; gap: 8px; align-items: center; }
   .done-btn:active { transform: scale(.98); }
   .done-btn svg { width: 22px; height: 22px; }
+  .ta { display: inline-block; background: var(--accent); color: #fff; font-size: 14px; font-weight: 800; padding: 2px 10px; border-radius: 6px; margin-left: 8px; vertical-align: 2px; }
+  .tarow { margin: 0 0 6px; background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; font-size: 14px; padding: 6px 10px; border-radius: 8px; }
+  .void-btn { border: 0; background: none; color: var(--muted); font-size: 14px; text-decoration: underline; padding: 8px 4px 0; display: block; margin: 0 auto; }
+  .tag.void { background: var(--chip); color: var(--muted); }
   .otot { text-align: right; font-size: 14px; color: var(--muted); margin-top: 4px; }
 
   .empty { text-align: center; padding: 18vh 16px; color: var(--muted); }
@@ -53,8 +57,8 @@
   .hist-bar input { font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
   .hist-bar .sum { margin-left: auto; color: var(--muted); font-size: 14px; }
   .btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 10px; font-weight: 600; }
-  .hrow { background: var(--surface); border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: start; }
-  .hrow .tb { font-size: 22px; font-weight: 800; }
+  .hrow { background: var(--surface); border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; display: grid; grid-template-columns: 120px 1fr auto; gap: 12px; align-items: start; }
+  .hrow .tb { font-size: 19px; font-weight: 800; }
   .hrow .meta { font-size: 13px; color: var(--muted); }
   .hrow .its { font-size: 15px; }
   .hrow .its div { padding: 2px 0; }
@@ -65,6 +69,25 @@
   .undo-link { border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 13px; padding: 6px 0; margin-top: 6px; display: block; }
   @media (max-width: 560px) { .hrow { grid-template-columns: 60px 1fr; } .hrow > :last-child { grid-column: 2; } }
 
+  .tgrid { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .tile { border: 0; text-align: left; background: var(--surface); border-radius: 18px; padding: 14px 16px; min-height: 130px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border: 2px solid transparent; }
+  .tile .tn { font-size: 30px; font-weight: 800; line-height: 1; }
+  .tile .tn small { font-size: 13px; color: var(--muted); font-weight: 600; margin-right: 4px; }
+  .tile .st { font-size: 13px; font-weight: 700; color: var(--muted); margin-top: auto; }
+  .tile .amt { font-size: 18px; font-weight: 800; }
+  .tile.busy { border-color: var(--accent); background: #fffaf7; }
+  .tile.busy .st { color: var(--accent-ink); }
+  .tile .pend { align-self: flex-start; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+  .tile.idle { opacity: .7; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 45; display: grid; place-items: center; padding: 16px; }
+  .modal { background: var(--surface); border-radius: 20px; width: min(560px, 100%); max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-h { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  .modal-h h3 { margin: 0; font-size: 20px; }
+  .modal-b { overflow-y: auto; padding: 6px 18px; }
+  .modal-f { padding: 14px 18px; border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: center; }
+  .mo { padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
+  .mo .meta { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .clear-btn { flex: 1; border: 0; background: var(--ink); color: #fff; font-weight: 800; font-size: 17px; padding: 14px; border-radius: 12px; }
   .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(29,27,25,.96); color: #fff; display: grid; place-items: center; text-align: center; padding: 24px; }
   .overlay h2 { font-size: 26px; margin: 0 0 8px; }
   .overlay p { opacity: .75; margin: 0 0 24px; }
@@ -80,22 +103,43 @@
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 160%); background: var(--ink); color: #fff; padding: 12px 14px 12px 18px; border-radius: 14px; display: flex; gap: 14px; align-items: center; transition: transform .25s; z-index: 40; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
   .toast.show { transform: translate(-50%, 0); }
   .toast button { border: 0; background: rgba(255,255,255,.15); color: #fff; padding: 8px 14px; border-radius: 10px; font-weight: 700; }
-  .banner { position: fixed; top: 70px; left: 50%; transform: translate(-50%, -200%); background: var(--accent); color: #fff; font-weight: 800; font-size: 18px; padding: 12px 22px; border-radius: 999px; z-index: 30; transition: transform .3s; box-shadow: 0 10px 30px rgba(226,85,43,.4); }
-  .banner.show { transform: translate(-50%, 0); }
+  .banner { position: fixed; top: 70px; left: 50%; transform: translate(-50%, -20px); opacity: 0; visibility: hidden; transition: all .3s; background: var(--accent); color: #fff; font-weight: 800; font-size: 18px; padding: 12px 22px; border-radius: 999px; z-index: 30; transition: transform .3s; box-shadow: 0 10px 30px rgba(226,85,43,.4); }
+  .banner.alt { background: #1f6feb; box-shadow: 0 10px 30px rgba(31,111,235,.4); }
+  .busy-pill.lv1 { background: #f5b301; color: #1d1b19; border-color: #f5b301; }
+  .busy-pill.lv2 { background: #e5484d; border-color: #e5484d; }
+  #reqs { padding: 14px 16px 0; }
+  .req-title { font-weight: 800; font-size: 14px; color: #1f4fa8; margin-bottom: 8px; }
+  .req-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
+  .req { display: flex; gap: 12px; align-items: center; background: #e8f0fe; border: 2px solid #1f6feb; border-radius: 16px; padding: 12px 14px; animation: glow2 1.2s ease-in-out 3; }
+  @keyframes glow2 { 50% { box-shadow: 0 0 0 6px rgba(31,111,235,.18); } }
+  .req.remind { background: #fff1e8; border-color: var(--accent); }
+  .req-ic { width: 40px; height: 40px; border-radius: 12px; background: #1f6feb; color: #fff; display: grid; place-items: center; flex: none; }
+  .req.remind .req-ic { background: var(--accent); }
+  .req-body { flex: 1; min-width: 0; font-size: 15px; }
+  .req-h b { font-size: 17px; }
+  .req .o { color: var(--muted); font-size: 13px; }
+  .req-w { margin-top: 2px; font-weight: 600; }
+  .req-ok { border: 0; background: var(--ink); color: #fff; font-weight: 800; padding: 10px 14px; border-radius: 12px; display: flex; gap: 6px; align-items: center; flex: none; }
+  .req-ok svg { width: 18px; height: 18px; }
+  .banner.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
+  #soundBar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 60; border: 0; background: #f5b400; color: #1d1b19; font-weight: 800; font-size: 16px; padding: 14px 22px; border-radius: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: calc(100% - 32px); }
 </style>
 </head>
 <body>
 <div class="top">
   <h1 id="title">接单</h1>
-  <div class="seg"><button id="tabLive" class="on">待输入 <span class="count" id="liveCount">0</span></button><button id="tabHist">历史订单</button></div>
-  <a class="pill" href="/staff/qr" target="_blank" style="text-decoration:none">二维码</a>
-  <button class="pill" id="soundBtn">🔔 声音开</button>
-  <button class="pill" id="langBtn">中 / EN</button>
-  <span class="pill" title="连接状态"><span class="dot" id="netDot"></span><span class="clock" id="clock"></span></span>
+  <div class="seg"><button id="tabLive" class="on">&nbsp;<span class="count" id="liveCount">0</span></button><button id="tabTables">桌台</button><button id="tabHist">历史订单</button></div>
+  <button class="pill busy-pill" id="busyBtn"></button>
+  <a class="pill" id="qrLink" href="/staff/qr" target="_blank" style="text-decoration:none"></a>
+  <a class="pill" id="adminLink" href="/admin" style="text-decoration:none"></a>
+  <button class="pill" id="soundBtn"></button>
+  <button class="pill" id="langBtn"></button>
+  <span class="pill" id="connPill"><span class="dot" id="netDot"></span><span class="clock" id="clock"></span></span>
 </div>
+<div id="reqs" style="display:none"></div>
 <div id="view"></div>
 <div class="banner" id="banner"></div>
-<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn">撤回</button></div>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn"></button></div>
 <div class="overlay" id="overlay" style="display:none"></div>
 
 <script>
@@ -104,13 +148,55 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const rm = (sen) => 'RM ' + (sen / 100).toFixed(2);
 const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-let nameLang = store.get('staffNameLang', 'zh');
-const L = (o) => (o && (o[nameLang] || o.zh || o.en || Object.values(o)[0])) || '';
+
+// ---------- i18n: the whole tablet UI and dish names follow one language ----------
+const S = {
+  zh: { admin: '管理后台', title: '接单', pending: '待输入', tables: '桌台', history: '历史订单', qr: '二维码', soundOn: '声音：开', soundOff: '声音：关', conn: '连接状态',
+    busy0: '出餐：正常', busy1: '出餐：忙碌', busy2: '出餐：非常忙碌', busySet0: '已恢复正常出餐，顾客端的等待提示已关闭。', busySet: '顾客端现在会提示：出餐可能多等约 {m} 分钟。',
+    tapSound: '点一下屏幕任意位置，开启新订单提示音', start: '开始接单', startSub: '请点一下开始。新订单或客人呼叫时平板会响铃，屏幕也会保持常亮。', login: '员工登录', loginSub: '请输入员工密码', tooMany: '尝试次数较多，请稍后再试', badPin: '密码不正确，请再试一次',
+    newOrder: '新订单：{t} 号桌', newReq: '{t} 号桌需要服务', tbl: '桌', nOrders: '{n} 张单', justNow: '刚刚', minAgo: '{n} 分钟前', note: '备注', takeaway: '外带',
+    taAll: '此单全部外带', taSome: '此单有部分菜品外带', total: '合计', done: '已输入收银机', voidBtn: '作废此单（错误单或重复下单）', voidConfirm: '确定作废这张订单吗？作废后不需要输入收银机。',
+    doneToast: '{t} 号桌 #{s} 已完成', voidToast: '{t} 号桌 #{s} 已作废', undo: '撤回', empty: '目前没有待输入的订单', emptySub: '新订单到达时会响铃提醒',
+    loading: '加载中…', nDay: '共 {n} 张单', noDay: '这一天没有订单', enteredAt: '已输入 {h}', backToPending: '退回待输入', voided: '已作废', restore: '恢复', pendingTag: '待输入', loadErr: '加载失败，请稍后再试',
+    dining: '用餐中 · {d}', idle: '空闲', nPending: '{n} 张待输入', tablesHint: '客人结账后，请点该桌并"清台"。清台后，客人手机上的点单页会失效，需重新扫描桌上的二维码才能再点。超过 {h} 小时没有新订单的桌子会自动清台。',
+    min: '{n} 分钟', hm: '{h} 小时 {m} 分', tableN: '{t} 号桌', diningFor: '用餐 {d}', close: '关闭', noOrderYet: '客人已扫码，还没有下单。', idleTable: '这张桌子目前空闲，客人扫码后会自动开台。',
+    clear: '清台（客人已结账离开）', clearConfirm: '确定为 {t} 号桌清台吗？', clearWarn: '提醒：还有 {n} 张单没有输入收银机。', cleared: '{t} 号桌已清台', entered: '已输入',
+    call: '呼叫服务员', remind: '催菜', rwater: '需要加水', rcutlery: '需要餐具或纸巾', rsauce: '需要酱料或辣椒', rother: '客人请服务员过去', handled: '已处理', orderedAgo: '下单 {n} 分钟', reqTitle: '客人服务提醒' },
+  en: { admin: 'Back office', title: 'Orders', pending: 'To enter', tables: 'Tables', history: 'History', qr: 'QR codes', soundOn: 'Sound: on', soundOff: 'Sound: off', conn: 'Connection',
+    busy0: 'Kitchen: normal', busy1: 'Kitchen: busy', busy2: 'Kitchen: very busy', busySet0: 'Back to normal. The waiting notice for guests is now off.', busySet: 'Guests will now see: food may take about {m} minutes longer.',
+    tapSound: 'Tap anywhere on the screen to turn on order sounds', start: 'Start taking orders', startSub: 'Please tap to start. The tablet will ring for new orders and guest requests, and the screen will stay on.', login: 'Staff login', loginSub: 'Please enter the staff PIN', tooMany: 'Too many attempts. Please try again shortly.', badPin: 'Incorrect PIN, please try again',
+    newOrder: 'New order: table {t}', newReq: 'Table {t} needs assistance', tbl: 'Table', nOrders: '{n} orders', justNow: 'just now', minAgo: '{n} min ago', note: 'Note', takeaway: 'Take away',
+    taAll: 'Whole order is take away', taSome: 'Some dishes are take away', total: 'Total', done: 'Entered into POS', voidBtn: 'Void this order (mistake or duplicate)', voidConfirm: 'Void this order? It will not need to be entered into the POS.',
+    doneToast: 'Table {t} #{s} done', voidToast: 'Table {t} #{s} voided', undo: 'Undo', empty: 'No orders waiting to be entered', emptySub: 'The tablet will ring when a new order arrives',
+    loading: 'Loading…', nDay: '{n} orders', noDay: 'No orders on this day', enteredAt: 'Entered {h}', backToPending: 'Move back to pending', voided: 'Voided', restore: 'Restore', pendingTag: 'To enter', loadErr: 'Could not load, please try again',
+    dining: 'Dining · {d}', idle: 'Free', nPending: '{n} to enter', tablesHint: 'After guests pay, tap their table and choose "Clear table". Their phones will then need to scan the table QR code again to order. Tables with no new orders for {h} hour(s) are cleared automatically.',
+    min: '{n} min', hm: '{h} h {m} min', tableN: 'Table {t}', diningFor: 'dining {d}', close: 'Close', noOrderYet: 'Guests have scanned but not ordered yet.', idleTable: 'This table is free. It opens automatically when guests scan.',
+    clear: 'Clear table (guests have paid)', clearConfirm: 'Clear table {t}?', clearWarn: 'Note: {n} order(s) are not yet entered into the POS.', cleared: 'Table {t} cleared', entered: 'Entered',
+    call: 'Call staff', remind: 'Food reminder', rwater: 'Water, please', rcutlery: 'Cutlery or tissues', rsauce: 'Extra sauce or chilli', rother: 'Please come to the table', handled: 'Handled', orderedAgo: 'ordered {n} min ago', reqTitle: 'Guest requests' },
+  ms: { admin: 'Pentadbir', title: 'Pesanan', pending: 'Untuk dimasukkan', tables: 'Meja', history: 'Sejarah', qr: 'Kod QR', soundOn: 'Bunyi: hidup', soundOff: 'Bunyi: tutup', conn: 'Sambungan',
+    busy0: 'Dapur: biasa', busy1: 'Dapur: sibuk', busy2: 'Dapur: sangat sibuk', busySet0: 'Kembali biasa. Notis menunggu untuk pelanggan telah ditutup.', busySet: 'Pelanggan kini akan melihat: makanan mungkin lambat kira-kira {m} minit.',
+    tapSound: 'Ketik di mana-mana pada skrin untuk menghidupkan bunyi pesanan', start: 'Mula terima pesanan', startSub: 'Sila tekan untuk mula. Tablet akan berbunyi untuk pesanan baharu dan permintaan pelanggan, dan skrin akan kekal hidup.', login: 'Log masuk kakitangan', loginSub: 'Sila masukkan PIN kakitangan', tooMany: 'Terlalu banyak cubaan. Sila cuba sebentar lagi.', badPin: 'PIN tidak betul, sila cuba lagi',
+    newOrder: 'Pesanan baharu: meja {t}', newReq: 'Meja {t} memerlukan bantuan', tbl: 'Meja', nOrders: '{n} pesanan', justNow: 'baru tadi', minAgo: '{n} minit lalu', note: 'Nota', takeaway: 'Bungkus',
+    taAll: 'Semua dibungkus', taSome: 'Sebahagian hidangan dibungkus', total: 'Jumlah', done: 'Sudah masuk POS', voidBtn: 'Batalkan pesanan ini (silap atau berganda)', voidConfirm: 'Batalkan pesanan ini? Ia tidak perlu dimasukkan ke POS.',
+    doneToast: 'Meja {t} #{s} selesai', voidToast: 'Meja {t} #{s} dibatalkan', undo: 'Buat asal', empty: 'Tiada pesanan untuk dimasukkan', emptySub: 'Tablet akan berbunyi apabila pesanan baharu tiba',
+    loading: 'Memuatkan…', nDay: '{n} pesanan', noDay: 'Tiada pesanan pada hari ini', enteredAt: 'Dimasukkan {h}', backToPending: 'Kembalikan ke senarai', voided: 'Dibatalkan', restore: 'Pulihkan', pendingTag: 'Belum dimasukkan', loadErr: 'Gagal dimuatkan, sila cuba lagi',
+    dining: 'Sedang makan · {d}', idle: 'Kosong', nPending: '{n} belum dimasukkan', tablesHint: 'Selepas pelanggan membayar, tekan meja mereka dan pilih "Kosongkan meja". Telefon mereka perlu mengimbas kod QR meja semula untuk memesan. Meja tanpa pesanan baharu selama {h} jam akan dikosongkan secara automatik.',
+    min: '{n} minit', hm: '{h} jam {m} minit', tableN: 'Meja {t}', diningFor: 'makan {d}', close: 'Tutup', noOrderYet: 'Pelanggan sudah imbas tetapi belum memesan.', idleTable: 'Meja ini kosong. Ia dibuka secara automatik apabila pelanggan mengimbas.',
+    clear: 'Kosongkan meja (sudah bayar)', clearConfirm: 'Kosongkan meja {t}?', clearWarn: 'Perhatian: {n} pesanan belum dimasukkan ke POS.', cleared: 'Meja {t} dikosongkan', entered: 'Dimasukkan',
+    call: 'Panggil pelayan', remind: 'Peringatan makanan', rwater: 'Minta air', rcutlery: 'Sudu, garpu atau tisu', rsauce: 'Sos atau cili tambahan', rother: 'Sila datang ke meja', handled: 'Selesai', orderedAgo: 'dipesan {n} minit lalu', reqTitle: 'Permintaan pelanggan' },
+};
+const LANG_ORDER = ['zh', 'en', 'ms'], LANG_LABEL = { zh: '中文', en: 'EN', ms: 'BM' };
+let lang = store.get('staffLang', store.get('staffNameLang', 'zh')); if (!S[lang]) lang = 'zh';
+const tr = (k, v = {}) => (S[lang][k] || S.zh[k] || k).replace(/\{(\w)\}/g, (_, x) => v[x] ?? '');
+const L = (o) => (o && (o[lang] || (lang === 'ms' ? o.en : null) || o.zh || o.en || Object.values(o)[0])) || '';
 const hhmm = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const BAG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
+const BELL = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
+const CLOCK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 
-let view = 'live', orders = [], seen = null, freshTables = new Set(), soundOn = store.get('staffSound', true);
-let serverSkew = 0, pollTimer = null;
+let view = 'live', orders = [], requests = [], seen = null, seenReq = null, freshTables = new Set(), soundOn = store.get('staffSound', true);
+let serverSkew = 0, pollTimer = null, busy = { level: 0, extra: 0 }, restaurantName = '';
 
 async function api(path, opts) {
   const r = await fetch(path, { credentials: 'same-origin', ...opts });
@@ -120,33 +206,63 @@ async function api(path, opts) {
   return j;
 }
 
-// ---------- sound (Web Audio chime; needs one tap to unlock on tablets) ----------
+// ---------- static labels ----------
+function applyLabels() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
+  $('title').textContent = (restaurantName ? restaurantName + ' · ' : '') + tr('title');
+  $('tabLive').firstChild.textContent = tr('pending') + ' ';
+  $('tabTables').textContent = tr('tables'); $('tabHist').textContent = tr('history');
+  $('qrLink').textContent = tr('qr'); $('adminLink').textContent = tr('admin'); $('langBtn').textContent = LANG_LABEL[lang];
+  $('connPill').title = tr('conn'); $('toastBtn').textContent = tr('undo');
+  renderSoundBtn(); renderBusyBtn(); renderRequests();
+}
+
+// ---------- sound (Web Audio; needs one tap to unlock on tablets) ----------
 let ctx = null;
-function chime() {
+function tone(notes) {
   if (!soundOn || !ctx) return;
   const now = ctx.currentTime;
-  [[880, 0], [1175, 0.18], [1568, 0.36], [880, 0.9], [1175, 1.08], [1568, 1.26]].forEach(([f, t]) => {
+  notes.forEach(([f, t]) => {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.type = 'sine'; o.frequency.value = f;
     g.gain.setValueAtTime(0.0001, now + t); g.gain.exponentialRampToValueAtTime(0.5, now + t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.5);
     o.connect(g).connect(ctx.destination); o.start(now + t); o.stop(now + t + 0.55);
   });
 }
-function renderSoundBtn() { $('soundBtn').textContent = soundOn ? '🔔 声音开' : '🔕 静音'; }
+const chime = () => tone([[880, 0], [1175, 0.18], [1568, 0.36], [880, 0.9], [1175, 1.08], [1568, 1.26]]);
+const ding = () => tone([[1318, 0], [988, 0.25], [1318, 0.6], [988, 0.85]]); // guest request: a different, two-tone ring
+function renderSoundBtn() { $('soundBtn').textContent = soundOn ? tr('soundOn') : tr('soundOff'); }
 $('soundBtn').onclick = () => { soundOn = !soundOn; store.set('staffSound', soundOn); renderSoundBtn(); if (soundOn) chime(); };
-$('langBtn').onclick = () => { nameLang = nameLang === 'zh' ? 'en' : 'zh'; store.set('staffNameLang', nameLang); render(); };
+$('langBtn').onclick = () => { lang = LANG_ORDER[(LANG_ORDER.indexOf(lang) + 1) % 3]; store.set('staffLang', lang); $('banner').classList.remove('show'); applyLabels(); setView(view); };
+
+// ---------- kitchen busy level (shown to guests) ----------
+function renderBusyBtn() { const b = $('busyBtn'); b.textContent = tr('busy' + busy.level); b.className = 'pill busy-pill lv' + busy.level; }
+$('busyBtn').onclick = async () => {
+  try { const r = await api('/api/staff/busy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: (busy.level + 1) % 3 }) });
+    busy = r.busy; renderBusyBtn(); showToast(busy.level ? tr('busySet', { m: busy.extra }) : tr('busySet0'), null);
+  } catch {}
+};
 
 let wakeLock = null;
 async function keepAwake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch {} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); poll(); } });
 
-function showStart() {
-  $('overlay').style.display = 'grid';
-  $('overlay').innerHTML = `<div><h2>开始接单</h2><p>点一下开始，平板会在新订单到达时响铃提醒，并保持屏幕常亮。</p><button class="big" id="startBtn">开始接单</button></div>`;
-  $('startBtn').onclick = () => {
-    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch {}
-    $('overlay').style.display = 'none'; keepAwake(); chime(); poll(); if (!pollTimer) pollTimer = setInterval(poll, 4000);
-  };
+// Go straight to the order board. Browsers only allow sound after a tap, so if the page was reopened
+// without one, a small bar asks staff to tap anywhere once; that tap turns on sound and keeps the screen awake.
+function unlockSound() {
+  try { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch {}
+  keepAwake();
+}
+function enterBoard(viaTap) {
+  $('overlay').style.display = 'none'; $('overlay').innerHTML = '';
+  unlockSound(); poll(); if (!pollTimer) pollTimer = setInterval(poll, 4000);
+  setTimeout(() => {
+    if (ctx && ctx.state === 'running') return;
+    const bar = document.createElement('button'); bar.id = 'soundBar'; bar.textContent = tr('tapSound');
+    document.body.appendChild(bar);
+    const go = () => { unlockSound(); bar.remove(); document.removeEventListener('pointerdown', go, true); };
+    document.addEventListener('pointerdown', go, true);
+  }, viaTap ? 400 : 50);
 }
 
 // ---------- login ----------
@@ -155,56 +271,83 @@ function showLogin() {
   pin = '';
   $('overlay').style.display = 'grid';
   const draw = (err = '') => {
-    $('overlay').innerHTML = `<div><h2>员工登录</h2><p>请输入员工密码</p><div class="pin-dots">${[0,1,2,3,4,5].slice(0, Math.max(4, pin.length)).map((i) => `<i class="${i < pin.length ? 'f' : ''}"></i>`).join('')}</div>
-      <div class="pad">${[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map((k) => `<button data-k="${k}">${k}</button>`).join('')}</div><div class="err">${esc(err)}</div></div>`;
+    $('overlay').innerHTML = `<div><h2>${esc(tr('login'))}</h2><p>${esc(tr('loginSub'))}</p><div class="pin-dots">${[0,1,2,3,4,5].slice(0, Math.max(4, pin.length)).map((i) => `<i class="${i < pin.length ? 'f' : ''}"></i>`).join('')}</div>
+      <div class="pad">${[1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].map((k) => `<button data-k="${k}">${k}</button>`).join('')}</div><div class="err">${esc(err)}</div>
+      <div style="margin-top:18px;display:flex;gap:8px;justify-content:center">${LANG_ORDER.map((k) => `<button class="pill" data-lg="${k}">${LANG_LABEL[k]}</button>`).join('')}</div></div>`;
     $('overlay').querySelectorAll('[data-k]').forEach((b) => b.onclick = async () => {
       const k = b.dataset.k;
       if (k === '⌫') pin = pin.slice(0, -1); else if (k === '✓') return submit(); else if (pin.length < 8) pin += k;
       draw();
     });
+    $('overlay').querySelectorAll('[data-lg]').forEach((b) => b.onclick = () => { lang = b.dataset.lg; store.set('staffLang', lang); applyLabels(); draw(); });
   };
   const submit = async () => {
     const r = await fetch('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
-    if (r.ok) { pin = ''; showStart(); } else { pin = ''; draw(r.status === 429 ? '尝试次数过多，请稍后再试' : '密码错误'); }
+    if (r.ok) { pin = ''; enterBoard(true); } else { pin = ''; draw(r.status === 429 ? tr('tooMany') : tr('badPin')); }
   };
   draw();
 }
 
-// ---------- live board ----------
+// ---------- polling ----------
+const recentlyUndone = new Set();
 async function poll() {
   try {
     const j = await api('/api/staff/orders');
     serverSkew = j.now - Date.now();
-    const ids = new Set(j.orders.map((o) => o.id));
+    const ids = new Set(j.orders.map((o) => o.id)), rids = new Set(j.requests.map((r) => r.id));
     if (seen) {
       const added = j.orders.filter((o) => !seen.has(o.id) && !recentlyUndone.has(o.id));
       if (added.length) {
         added.forEach((o) => freshTables.add(o.table));
-        chime();
-        const tbls = [...new Set(added.map((o) => o.table))].join('、');
-        banner(`新订单：${tbls} 号桌`);
+        chime(); banner(tr('newOrder', { t: [...new Set(added.map((o) => o.table))].join(', ') }));
         setTimeout(() => { added.forEach((o) => freshTables.delete(o.table)); }, 60000);
       }
     }
+    if (seenReq) {
+      const addedR = j.requests.filter((r) => !seenReq.has(r.id));
+      if (addedR.length) { ding(); banner(tr('newReq', { t: [...new Set(addedR.map((r) => r.table))].join(', ') }), true); }
+    }
     recentlyUndone.clear();
-    seen = ids; orders = j.orders;
+    seen = ids; seenReq = rids; orders = j.orders; requests = j.requests;
+    if (j.busy.level !== busy.level) { busy = j.busy; renderBusyBtn(); }
     $('netDot').classList.remove('off');
     $('liveCount').textContent = orders.length;
-    document.title = (orders.length ? `(${orders.length}) ` : '') + '接单平板';
-    if (view === 'live') render();
+    document.title = (orders.length + requests.length ? `(${orders.length + requests.length}) ` : '') + tr('title');
+    renderRequests();
+    if (view === 'live') render(); else if (view === 'tables') renderTables();
   } catch (e) { if (e.message !== 'login') $('netDot').classList.add('off'); }
 }
-const recentlyUndone = new Set();
 
-function ageClass(min) { return min >= 15 ? 'late' : min >= 8 ? 'warn' : ''; }
+// ---------- guest requests (call staff / food reminder) ----------
+function renderRequests() {
+  const box = $('reqs');
+  if (!requests.length) { box.innerHTML = ''; box.style.display = 'none'; return; }
+  const now = Date.now() + serverSkew;
+  box.style.display = '';
+  box.innerHTML = `<div class="req-title">${esc(tr('reqTitle'))}</div><div class="req-list">${requests.map((r) => {
+    const ago = Math.floor((now - r.createdAt) / 60000);
+    const what = r.type === 'call' ? esc(tr('r' + r.detail.reason))
+      : r.detail.items.map((i) => `${i.qty}× ${esc(L(i.name))}${i.takeaway ? ` <span class="ta" style="font-size:12px">${esc(tr('takeaway'))}</span>` : ''} <span class="o">(#${i.seq}, ${esc(tr('orderedAgo', { n: Math.floor((now - i.orderedAt) / 60000) }))})</span>`).join('<br>');
+    return `<div class="req ${r.type}"><div class="req-ic">${r.type === 'call' ? BELL : CLOCK}</div>
+      <div class="req-body"><div class="req-h"><b>${esc(tr('tableN', { t: r.table }))}</b> · ${esc(tr(r.type === 'call' ? 'call' : 'remind'))} <span class="o">${ago < 1 ? esc(tr('justNow')) : esc(tr('minAgo', { n: ago }))}</span></div><div class="req-w">${what}</div></div>
+      <button class="req-ok" data-req="${r.id}">${CHECK}${esc(tr('handled'))}</button></div>`; }).join('')}</div>`;
+  box.querySelectorAll('[data-req]').forEach((b) => b.onclick = async () => {
+    requests = requests.filter((r) => r.id !== Number(b.dataset.req)); renderRequests();
+    try { await api(`/api/staff/requests/${b.dataset.req}/done`, { method: 'POST' }); } catch { poll(); }
+  });
+}
+
+// ---------- live board ----------
+// Age colour follows each order's usual cooking time (+ busy extra): amber near it, red past it.
+function ageClass(o, min) { const due = Math.max(...o.lines.map((l) => l.cookMinutes || 15)) + busy.extra; return min >= due ? 'late' : min >= due * 0.7 ? 'warn' : ''; }
 function lineHTML(l) {
   const opts = l.options.map((x) => L(x.choice)).join(' · ');
-  return `<div class="line"><div class="q">${l.qty}×</div><div><div class="n">${esc(L(l.name))}</div>${opts ? `<div class="o">${esc(opts)}</div>` : ''}${l.note ? `<div class="nt">备注：${esc(l.note)}</div>` : ''}</div></div>`;
+  return `<div class="line"><div class="q">${l.qty}×</div><div><div class="n">${esc(L(l.name))}${l.takeaway ? `<span class="ta">${esc(tr('takeaway'))}</span>` : ''}</div>${opts ? `<div class="o">${esc(opts)}</div>` : ''}${l.note ? `<div class="nt">${esc(tr('note'))}: ${esc(l.note)}</div>` : ''}</div></div>`;
 }
 function render() {
   if (view !== 'live') return;
   if (!orders.length) {
-    $('view').innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h18M4.5 15a7.5 7.5 0 0 1 15 0"/><path d="M12 7.5V6M10.5 6h3M5 18h14"/></svg><h2>暂无待输入订单</h2><p>新订单到达时会响铃提醒</p></div>`;
+    $('view').innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h18M4.5 15a7.5 7.5 0 0 1 15 0"/><path d="M12 7.5V6M10.5 6h3M5 18h14"/></svg><h2>${esc(tr('empty'))}</h2><p>${esc(tr('emptySub'))}</p></div>`;
     return;
   }
   const byTable = new Map();
@@ -212,61 +355,109 @@ function render() {
   const now = Date.now() + serverSkew;
   $('view').innerHTML = `<div class="board">${[...byTable.entries()].map(([tbl, list]) => `
     <div class="tcard${freshTables.has(tbl) ? ' fresh' : ''}">
-      <div class="thead"><div class="tnum"><small>桌</small>${esc(tbl)}</div><span style="color:var(--muted);font-size:14px">${list.length} 张单</span></div>
+      <div class="thead"><div class="tnum"><small>${esc(tr('tbl'))}</small>${esc(tbl)}</div><span style="color:var(--muted);font-size:14px">${esc(tr('nOrders', { n: list.length }))}</span></div>
       ${list.map((o) => { const min = Math.floor((now - o.createdAt) / 60000); return `<div class="order">
-        <div class="ohead"><b>#${o.seq}</b><span>${hhmm(o.createdAt)}</span><span class="age ${ageClass(min)}">${min < 1 ? '刚刚' : min + ' 分钟前'}</span></div>
+        <div class="ohead"><b>#${o.seq}</b><span>${hhmm(o.createdAt)}</span><span class="age ${ageClass(o, min)}">${min < 1 ? esc(tr('justNow')) : esc(tr('minAgo', { n: min }))}</span></div>
+        ${o.lines.some((l) => l.takeaway) ? `<div class="tarow">${BAG} ${esc(tr(o.lines.every((l) => l.takeaway) ? 'taAll' : 'taSome'))}</div>` : ''}
         ${o.lines.map(lineHTML).join('')}
-        <div class="otot">合计 ${rm(o.total)}</div>
-        <button class="done-btn" data-done="${o.id}">${CHECK}已输入收银机</button></div>`; }).join('')}
+        <div class="otot">${esc(tr('total'))} ${rm(o.total)}</div>
+        <button class="done-btn" data-done="${o.id}">${CHECK}${esc(tr('done'))}</button>
+        <button class="void-btn" data-void="${o.id}">${esc(tr('voidBtn'))}</button></div>`; }).join('')}
     </div>`).join('')}</div>`;
   $('view').querySelectorAll('[data-done]').forEach((b) => b.onclick = () => markDone(Number(b.dataset.done)));
+  $('view').querySelectorAll('[data-void]').forEach((b) => b.onclick = () => { if (confirm(tr('voidConfirm'))) markDone(Number(b.dataset.void), 'void'); });
 }
-async function markDone(id) {
+async function markDone(id, action = 'done') {
   const o = orders.find((x) => x.id === id);
   orders = orders.filter((x) => x.id !== id); $('liveCount').textContent = orders.length; render();
-  try { await api(`/api/staff/orders/${id}/done`, { method: 'POST' }); seen?.delete(id); }
+  try { await api(`/api/staff/orders/${id}/${action}`, { method: 'POST' }); seen?.delete(id); }
   catch { if (o) { orders.push(o); orders.sort((a, b) => a.id - b.id); render(); } return; }
-  showToast(`${o ? o.table + ' 号桌 #' + o.seq : '订单'} 已完成`, async () => { recentlyUndone.add(id); await api(`/api/staff/orders/${id}/undo`, { method: 'POST' }); poll(); });
+  showToast(tr(action === 'void' ? 'voidToast' : 'doneToast', { t: o?.table, s: o?.seq }), async () => { recentlyUndone.add(id); await api(`/api/staff/orders/${id}/undo`, { method: 'POST' }); poll(); });
 }
 
 // ---------- history ----------
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
 let histDay = today();
 async function renderHistory() {
-  $('view').innerHTML = `<div class="hist-wrap"><div class="hist-bar"><button class="btn" id="prevDay">‹</button><input type="date" id="dayInput" value="${histDay}" max="${today()}"><button class="btn" id="nextDay">›</button><span class="sum" id="histSum"></span></div><div id="histList">加载中…</div></div>`;
+  $('view').innerHTML = `<div class="hist-wrap"><div class="hist-bar"><button class="btn" id="prevDay">‹</button><input type="date" id="dayInput" value="${histDay}" max="${today()}"><button class="btn" id="nextDay">›</button><span class="sum" id="histSum"></span></div><div id="histList">${esc(tr('loading'))}</div></div>`;
   const shift = (d) => { const x = new Date(histDay + 'T12:00:00'); x.setDate(x.getDate() + d); histDay = x.toISOString().slice(0, 10); renderHistory(); };
   $('prevDay').onclick = () => shift(-1); $('nextDay').onclick = () => { if (histDay < today()) shift(1); };
   $('dayInput').onchange = (e) => { if (e.target.value) { histDay = e.target.value; renderHistory(); } };
   try {
     const j = await api('/api/staff/history?day=' + histDay);
-    $('histSum').textContent = `共 ${j.orders.length} 张单`;
+    $('histSum').textContent = tr('nDay', { n: j.orders.length });
     $('histList').innerHTML = j.orders.length ? j.orders.map((o) => `<div class="hrow">
-      <div><div class="tb">${esc(o.table)}</div><div class="meta">#${o.seq} · ${hhmm(o.createdAt)}</div></div>
-      <div class="its">${o.lines.map((l) => `<div>${l.qty} × ${esc(L(l.name))}${l.options.length ? ` <span class="o">(${esc(l.options.map((x) => L(x.choice)).join(' · '))})</span>` : ''}${l.note ? ` <span class="o">备注：${esc(l.note)}</span>` : ''}</div>`).join('')}<div class="meta" style="margin-top:4px">合计 ${rm(o.total)}</div></div>
-      <div style="text-align:right">${o.status === 'done' ? `<span class="tag done">已输入 ${o.doneAt ? hhmm(o.doneAt) : ''}</span><button class="undo-link" data-undo="${o.id}">退回待输入</button>` : '<span class="tag new">待输入</span>'}</div>
-    </div>`).join('') : '<div class="empty" style="padding:10vh 0">这一天没有订单</div>';
+      <div><div class="tb">${esc(tr('tableN', { t: o.table }))}</div><div class="meta">#${o.seq} · ${hhmm(o.createdAt)}</div></div>
+      <div class="its">${o.lines.map((l) => `<div>${l.qty} × ${esc(L(l.name))}${l.takeaway ? `<span class="ta" style="font-size:12px">${esc(tr('takeaway'))}</span>` : ''}${l.options.length ? ` <span class="o">(${esc(l.options.map((x) => L(x.choice)).join(' · '))})</span>` : ''}${l.note ? ` <span class="o">${esc(tr('note'))}: ${esc(l.note)}</span>` : ''}</div>`).join('')}<div class="meta" style="margin-top:4px">${esc(tr('total'))} ${rm(o.total)}</div></div>
+      <div style="text-align:right">${o.status === 'done' ? `<span class="tag done">${esc(tr('enteredAt', { h: o.doneAt ? hhmm(o.doneAt) : '' }))}</span><button class="undo-link" data-undo="${o.id}">${esc(tr('backToPending'))}</button>`
+        : o.status === 'void' ? `<span class="tag void">${esc(tr('voided'))}</span><button class="undo-link" data-undo="${o.id}">${esc(tr('restore'))}</button>` : `<span class="tag new">${esc(tr('pendingTag'))}</span>`}</div>
+    </div>`).join('') : `<div class="empty" style="padding:10vh 0">${esc(tr('noDay'))}</div>`;
     $('histList').querySelectorAll('[data-undo]').forEach((b) => b.onclick = async () => { await api(`/api/staff/orders/${b.dataset.undo}/undo`, { method: 'POST' }); recentlyUndone.add(Number(b.dataset.undo)); renderHistory(); poll(); });
-  } catch (e) { if (e.message !== 'login') $('histList').textContent = '加载失败，请重试'; }
+  } catch (e) { if (e.message !== 'login') $('histList').textContent = tr('loadErr'); }
 }
-$('tabLive').onclick = () => { view = 'live'; $('tabLive').classList.add('on'); $('tabHist').classList.remove('on'); render(); };
-$('tabHist').onclick = () => { view = 'hist'; $('tabHist').classList.add('on'); $('tabLive').classList.remove('on'); renderHistory(); };
+function setView(v) { view = v; [['live', 'tabLive'], ['tables', 'tabTables'], ['hist', 'tabHist']].forEach(([k, id]) => $(id).classList.toggle('on', k === v));
+  if (v === 'live') render(); else if (v === 'hist') renderHistory(); else renderTables(); }
+$('tabLive').onclick = () => setView('live');
+$('tabTables').onclick = () => setView('tables');
+$('tabHist').onclick = () => setView('hist');
+
+// ---------- tables: who is dining, clear table ----------
+let tableData = null, openModal = null, lastModalJson = '';
+const dur = (ms) => { const m = Math.max(0, Math.floor(ms / 60000)); return m < 60 ? tr('min', { n: m }) : tr('hm', { h: Math.floor(m / 60), m: m % 60 }); };
+async function renderTables() {
+  if (view !== 'tables') return;
+  try { tableData = await api('/api/staff/table-status'); } catch { return; }
+  if (view !== 'tables') return;
+  const now = tableData.now;
+  $('view').innerHTML = `<div class="tgrid">${tableData.tables.map((t) => { const s = t.session;
+    return s ? `<button class="tile busy" data-t="${t.id}"><div class="tn"><small>${esc(tr('tbl'))}</small>${esc(t.name)}</div>${s.pending ? `<span class="pend">${esc(tr('nPending', { n: s.pending }))}</span>` : ''}
+        <div class="amt">${rm(s.total)}</div><div class="st">${esc(tr('dining', { d: dur(now - s.openedAt) }))}</div></button>`
+      : `<button class="tile idle" data-t="${t.id}"><div class="tn"><small>${esc(tr('tbl'))}</small>${esc(t.name)}</div><div class="st">${esc(tr('idle'))}</div></button>`; }).join('')}</div>
+    <p style="text-align:center;color:var(--muted);font-size:13px;padding:0 16px 20px">${esc(tr('tablesHint', { h: tableData.autoCloseHours }))}</p>`;
+  $('view').querySelectorAll('[data-t]').forEach((b) => b.onclick = () => showTable(Number(b.dataset.t)));
+  if (openModal) { const j = JSON.stringify(tableData.tables.find((x) => x.id === openModal)); if (j !== lastModalJson) showTable(openModal); }
+}
+function closeModal() { openModal = null; const m = document.querySelector('.modal-bg'); if (m) m.remove(); }
+function showTable(id) {
+  const t = tableData?.tables.find((x) => x.id === id); if (!t) return closeModal();
+  openModal = id; lastModalJson = JSON.stringify(t); const s = t.session;
+  const body = s ? s.orders.map((o) => `<div class="mo"><div class="meta"><b style="color:var(--ink)">#${o.seq}</b>${hhmm(o.createdAt)}
+      ${o.status === 'done' ? `<span class="tag done">${esc(tr('entered'))}</span>` : o.status === 'void' ? `<span class="tag void">${esc(tr('voided'))}</span>` : `<span class="tag new">${esc(tr('pendingTag'))}</span>`}<span style="margin-left:auto">${rm(o.total)}</span></div>
+      ${o.lines.map((l) => `<div>${l.qty} × ${esc(L(l.name))}${l.takeaway ? `<span class="ta" style="font-size:12px">${esc(tr('takeaway'))}</span>` : ''}</div>`).join('')}</div>`).join('') || `<p style="color:var(--muted)">${esc(tr('noOrderYet'))}</p>`
+    : `<p style="color:var(--muted);padding:20px 0">${esc(tr('idleTable'))}</p>`;
+  document.querySelector('.modal-bg')?.remove();
+  const el = document.createElement('div'); el.className = 'modal-bg';
+  el.innerHTML = `<div class="modal"><div class="modal-h"><h3>${esc(tr('tableN', { t: t.name }))} ${s ? `<span style="font-size:14px;color:var(--muted);font-weight:600">· ${esc(tr('diningFor', { d: dur(tableData.now - s.openedAt) }))}</span>` : ''}</h3><button class="btn" data-x>${esc(tr('close'))}</button></div>
+    <div class="modal-b">${body}</div>
+    ${s ? `<div class="modal-f"><div style="font-weight:800;font-size:18px">${esc(tr('total'))} ${rm(s.total)}</div><button class="clear-btn" data-clear="${s.id}">${esc(tr('clear'))}</button></div>` : ''}</div>`;
+  document.body.appendChild(el);
+  el.onclick = (e) => { if (e.target === el || e.target.closest('[data-x]')) closeModal(); };
+  const cb = el.querySelector('[data-clear]');
+  if (cb) cb.onclick = async () => {
+    const warn = s.pending ? '\n\n' + tr('clearWarn', { n: s.pending }) : '';
+    if (!confirm(tr('clearConfirm', { t: t.name }) + warn)) return;
+    await api(`/api/staff/sessions/${s.id}/clear`, { method: 'POST' });
+    closeModal(); renderTables(); showToast(tr('cleared', { t: t.name }), null);
+  };
+}
 
 // ---------- misc ----------
 let toastTimer, bannerTimer;
 function showToast(msg, undo) {
   $('toastMsg').textContent = msg; $('toast').classList.add('show');
+  $('toastBtn').style.display = undo ? '' : 'none';
   $('toastBtn').onclick = async () => { $('toast').classList.remove('show'); await undo(); };
   clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 6000);
 }
-function banner(msg) { $('banner').textContent = msg; $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), 6000); }
-setInterval(() => { $('clock').textContent = hhmm(Date.now()); if (view === 'live' && orders.length) render(); }, 30000);
+function banner(msg, alt) { $('banner').textContent = msg; $('banner').classList.toggle('alt', !!alt); $('banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => $('banner').classList.remove('show'), 6000); }
+setInterval(() => { $('clock').textContent = hhmm(Date.now()); renderRequests(); if (view === 'live' && orders.length) render(); }, 30000);
 $('clock').textContent = hhmm(Date.now());
-renderSoundBtn();
+applyLabels();
 
 (async function init() {
-  fetch('/api/config').then((r) => r.json()).then((c) => { $('title').textContent = c.name + ' · 接单'; }).catch(() => {});
+  fetch('/api/config').then((r) => r.json()).then((c) => { restaurantName = c.name; applyLabels(); }).catch(() => {});
   const r = await fetch('/api/staff/orders');
-  if (r.status === 401) showLogin(); else showStart();
+  if (r.status === 401) showLogin(); else enterBoard(false);
 })();
 </script>
 </body>

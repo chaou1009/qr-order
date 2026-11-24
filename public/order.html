@@ -13,12 +13,24 @@
   .hero { background: var(--surface); padding: 18px 16px 14px; }
   .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand.has-logo { flex-wrap: wrap; gap: 6px 12px; }
+  .brand.has-logo .table-pill { margin-top: 0; }
+  .brand-logo { display: block; max-height: 60px; max-width: min(200px, 48vw); width: auto; height: auto; object-fit: contain; }
   .logo { width: 44px; height: 44px; border-radius: 14px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
   .brand h1 { font-size: 18px; margin: 0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .table-pill { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); padding: 2px 10px; border-radius: 999px; }
   .hero-actions { display: flex; gap: 8px; flex: none; }
   .icon-btn { height: 38px; min-width: 38px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
   .icon-btn svg { width: 18px; height: 18px; }
+  .act-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .orders-btn { display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: var(--ink); color: var(--surface); font-weight: 800; font-size: 14px; padding: 11px 8px; border-radius: 14px; }
+  .orders-btn svg { width: 18px; height: 18px; }
+  .orders-btn b { background: var(--accent); color: #fff; border-radius: 999px; min-width: 20px; height: 20px; font-size: 12px; display: inline-grid; place-items: center; padding: 0 6px; }
+  .orders-btn:disabled { background: var(--chip); color: var(--muted-2); }
+  .call-btn { width: 100%; font-size: 14px !important; padding: 11px 8px !important; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent-ink); font-weight: 800; font-size: 15px; padding: 11px; border-radius: 14px; }
+  .call-btn svg { width: 20px; height: 20px; }
+  .call-btn:active { background: var(--accent-soft); }
+  .call-btn.sent { border-color: #1e9e4a; color: #1e7a3c; background: #e6f4ea; }
   .notice { margin-top: 12px; font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 
   /* ---------- category tabs ---------- */
@@ -29,8 +41,24 @@
   .tab.active { background: var(--ink); color: var(--surface); }
 
   /* ---------- menu ---------- */
-  .section { padding: 18px 16px 4px; scroll-margin-top: 58px; }
-  .section h2 { font-size: 17px; margin: 0 0 6px; }
+  main { background: var(--bg); padding-top: 12px; }
+  .section { background: var(--surface); margin: 0 0 14px; padding: 16px 16px 2px; scroll-margin-top: 66px; box-shadow: 0 1px 0 var(--line), 0 -1px 0 var(--line); }
+  @media (min-width: 560px) { .section { margin: 0 10px 12px; border-radius: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.05); } }
+  .section h2 { font-size: 19px; margin: 0; padding-bottom: 12px; border-bottom: 2px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .section h2 .bar { width: 4px; height: 20px; border-radius: 2px; background: var(--accent); flex: none; }
+  .section h2 .cnt { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--chip); padding: 2px 9px; border-radius: 999px; }
+  body[data-theme] .section h2 .bar { display: none; }
+  .section.specials { background: linear-gradient(180deg, var(--accent-soft), var(--surface) 140px); box-shadow: 0 0 0 2px var(--accent) inset; }
+  @media (min-width: 560px) { .section.specials { box-shadow: 0 0 0 2px var(--accent) inset, 0 4px 14px rgba(0,0,0,.06); } }
+  .section.specials h2 { color: var(--accent-ink); border-bottom-color: rgba(0,0,0,.06); padding-bottom: 4px; }
+  .section.specials .sp-ic { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+  .section.specials .sp-ic svg { width: 16px; height: 16px; }
+  .sp-sub { margin: 0 0 4px; font-size: 13px; color: var(--muted); padding-bottom: 8px; border-bottom: 2px solid rgba(0,0,0,.06); }
+  body[data-theme] .section.specials h2::before { display: none; }
+  .tab-sp { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; }
+  .tab-sp svg { width: 14px; height: 14px; }
+  .tab-sp.active { background: var(--accent); color: #fff; }
+
   .item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .item:last-child { border-bottom: 0; }
   .item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -47,7 +75,10 @@
   .item.soldout .item-name, .item.soldout .item-price, .item.soldout .item-desc { color: var(--muted-2); }
   .item.soldout .thumb { filter: grayscale(1); opacity: .55; }
   .soldout-tag { position: absolute; inset: auto 0 8px 0; margin: auto; width: max-content; background: rgba(20,20,20,.78); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
-  .footer-space { text-align: center; color: var(--muted-2); font-size: 12px; padding: 24px 16px; }
+  .stock-note { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 3px 8px; align-self: flex-start; }
+  .stock-note.out { color: var(--muted); background: var(--chip); }
+  .item.soldout .stock-note { color: var(--muted); background: var(--chip); }
+  .footer-space { background: var(--bg); text-align: center; color: var(--muted-2); font-size: 12px; padding: 24px 16px; }
 
   /* ---------- cart bar ---------- */
   .cartbar { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 30; max-width: 640px; margin: 0 auto;
@@ -117,6 +148,42 @@
   .shake { animation: shake .4s; }
   @keyframes shake { 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
 
+  .serve { border-top: 8px solid var(--bg); padding: 14px 16px; }
+  .serve b { font-size: 16px; display: block; margin-bottom: 10px; }
+  .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--chip); padding: 4px; border-radius: 14px; }
+  .seg2 button { border: 0; background: none; padding: 11px; border-radius: 11px; font-weight: 700; font-size: 15px; color: var(--muted); display: flex; gap: 6px; align-items: center; justify-content: center; }
+  .seg2 button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .seg2 button.on.ta { color: var(--accent-ink); }
+  .ta-tag { display: inline-block; font-size: 11px; font-weight: 800; color: #fff; background: var(--accent); padding: 1px 7px; border-radius: 6px; margin-left: 6px; vertical-align: 2px; }
+  .void-tag { display: inline-block; font-size: 11px; font-weight: 800; color: #b42318; background: #fde2e1; padding: 1px 7px; border-radius: 6px; margin-left: 6px; }
+  .hist.void .receipt-row { color: var(--muted-2); text-decoration: line-through; }
+  .hist.void .receipt-row .o { text-decoration: none; }
+  .void-note { margin: 0; padding: 8px 14px; font-size: 13px; color: #b42318; background: #fff5f4; }
+  .htabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--chip); padding: 4px; border-radius: 12px; margin: 0 16px 8px; }
+  .htabs button { border: 0; background: none; padding: 9px; border-radius: 9px; font-weight: 700; color: var(--muted); }
+  .htabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .st { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 1px; }
+  .st.new { background: #fff4d6; color: #8a5a00; }
+  .st.done { background: #e6f4ea; color: #1e7a3c; }
+  .table-sum { margin: 12px 16px; padding: 14px; border-radius: 14px; background: var(--ink); color: var(--surface); display: flex; justify-content: space-between; font-weight: 800; font-size: 17px; }
+  .busy { margin-top: 12px; display: flex; gap: 10px; align-items: flex-start; background: #fff4d6; color: #7a4f00; border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 1.45; font-weight: 600; }
+  .busy svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+  .busy.lv2 { background: #fde2e1; color: #9a2a1d; }
+  .reason { display: flex; align-items: center; width: calc(100% - 32px); margin: 0 16px 10px; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 15px 16px; font-size: 16px; font-weight: 700; text-align: left; }
+  .reason:active { background: var(--chip); }
+  .sheet-sub { padding: 0 16px 10px; color: var(--muted); font-size: 14px; margin: 0; }
+  .rm-line { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .rm-line input { position: absolute; opacity: 0; pointer-events: none; }
+  .rm-line .info { flex: 1; min-width: 0; }
+  .rm-line .sub { font-size: 13px; color: var(--muted); }
+  .rm-line.wait { cursor: default; opacity: .6; }
+  .rm-line.wait .mark { border-style: dashed; }
+  .rm-line input:checked + .mark { border-color: var(--accent); background: var(--accent); }
+  .rm-line input:checked + .mark::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: translateY(-1px) rotate(45deg); }
+  .remind-cta { display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 4px 16px 12px; border: 0; background: var(--accent); color: #fff; font-weight: 800; font-size: 15px; padding: 13px 14px; border-radius: 14px; text-align: left; box-shadow: 0 4px 12px rgba(226,85,43,.25); }
+  .remind-cta span { flex: 1; }
+  .remind-cta .chev { width: 18px; height: 18px; opacity: .9; }
+  .remind-cta svg { width: 18px; height: 18px; }
   /* cart */
   .cart-line { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); align-items: flex-start; }
   .cart-line .info { flex: 1; min-width: 0; }
@@ -133,6 +200,9 @@
   /* success */
   .success { position: fixed; inset: 0; z-index: 60; background: var(--surface); display: none; flex-direction: column; align-items: center; overflow-y: auto; padding: 48px 20px calc(24px + env(safe-area-inset-bottom)); }
   .success.show { display: flex; }
+  .success { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  body.locked { position: fixed; left: 0; right: 0; overflow: hidden; }
+  body.success-open #app, body.success-open .cartbar { visibility: hidden; }
   .tick { width: 84px; height: 84px; border-radius: 50%; background: #e6f4ea; display: grid; place-items: center; animation: pop .45s cubic-bezier(.2,1.4,.4,1); }
   .tick svg { width: 44px; height: 44px; color: #1e9e4a; stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw .4s .25s forwards; }
   @keyframes pop { from { transform: scale(.4); opacity: 0; } }
@@ -170,6 +240,46 @@
   .sk { height: 104px; border-radius: 14px; background: linear-gradient(90deg, var(--chip) 0%, var(--line) 50%, var(--chip) 100%); background-size: 200% 100%; animation: sk 1.2s infinite; margin-bottom: 14px; }
   @keyframes sk { to { background-position: -200% 0; } }
   .wrap { max-width: 640px; margin: 0 auto; background: var(--surface); min-height: 100vh; }
+  /* ---- festival themes (switched in admin) ---- */
+  body[data-theme=cny] { --accent: #d62828; --accent-ink: #9d1717; --accent-soft: #fde4e1; --bg: #fbf3ec; }
+  body[data-theme=merdeka] { --accent: #c8102e; --accent-ink: #0b2a7a; --accent-soft: #e6ecfb; --bg: #f3f5fa; }
+  body[data-theme=raya] { --accent: #13804a; --accent-ink: #0b5a33; --accent-soft: #e2f3e9; --bg: #f3f7f1; }
+  body[data-theme=deepavali] { --accent: #c2410c; --accent-ink: #7c2d92; --accent-soft: #f6e8fb; --bg: #fbf5f0; }
+  body[data-theme=gawai] { --accent: #a45a13; --accent-ink: #6f3b08; --accent-soft: #f7ead9; --bg: #f8f3ea; }
+  body[data-theme=christmas] { --accent: #c0262d; --accent-ink: #11603a; --accent-soft: #e3f2e8; --bg: #f4f6f2; }
+  .fest { position: relative; display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 14px 14px; min-height: 78px; border-radius: 18px; color: #fff; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.12); isolation: isolate; }
+  .fest::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: .22; background-image: radial-gradient(circle at 20% 30%, #fff 0 1.2px, transparent 1.6px), radial-gradient(circle at 70% 80%, #fff 0 1px, transparent 1.4px); background-size: 26px 26px, 34px 34px; }
+  .fest::after { content: ''; position: absolute; inset: 5px; z-index: -1; border-radius: 14px; border: 1.5px solid currentColor; opacity: .35; }
+  .fest .txt { flex: 1; text-align: center; min-width: 0; }
+  .fest .g1 { display: block; font-size: 18px; font-weight: 900; line-height: 1.25; letter-spacing: .02em; text-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  .fest .g2 { display: block; font-size: 12px; font-weight: 700; opacity: .85; margin-top: 3px; letter-spacing: .06em; }
+  .fest .ic { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.14); }
+  .fest .ic svg { width: 30px; height: 30px; }
+  .fest .ic.r { animation: sway 3.2s ease-in-out infinite; transform-origin: 50% 0; }
+  .fest .ic.l { animation: sway 3.2s ease-in-out -1.6s infinite; transform-origin: 50% 0; }
+  @keyframes sway { 50% { transform: rotate(7deg); } 0%, 100% { transform: rotate(-7deg); } }
+  .fest canvas, .fest-img canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .fest.cny { background: radial-gradient(120% 140% at 50% 0%, #e8402f, #a80f18 70%); color: #ffd978; }
+  .fest.merdeka { background: linear-gradient(100deg, #0b2a7a 0 22%, #c8102e 30% 100%); color: #ffd400; }
+  .fest.raya { background: radial-gradient(120% 140% at 50% 0%, #1fa25c, #0b5a33 75%); color: #ffe39a; }
+  .fest.deepavali { background: linear-gradient(110deg, #5b1a8f, #b5206b 55%, #e2661b); color: #ffe39a; }
+  .fest.gawai { background: radial-gradient(120% 140% at 50% 0%, #c9852a, #6f3b08 80%); color: #fff1cf; }
+  .fest.christmas { background: radial-gradient(120% 140% at 50% 0%, #1f9a5c, #0d4f30 75%); color: #fff; }
+  .fest-img { position: relative; margin: 0 0 14px; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,.12); background: var(--chip); }
+  .fest-img img { display: block; width: 100%; height: auto; max-height: 220px; object-fit: cover; }
+  #fxPage { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; transition: opacity 1.5s; }
+  /* festive touches across the menu (only when a festival theme is on) */
+  body[data-theme] .section h2 { display: flex; align-items: center; gap: 8px; }
+  body[data-theme] .section h2::before { content: ''; width: 22px; height: 22px; flex: none; background: var(--motif) center/contain no-repeat; }
+  body[data-theme] .tab.active { background: var(--accent); color: #fff; }
+  body[data-theme] .cartbar { background: linear-gradient(100deg, var(--accent-ink), var(--accent)); }
+  body[data-theme] .footer-space::before { content: var(--greet); display: block; font-weight: 800; color: var(--accent-ink); margin-bottom: 4px; }
+  body[data-theme] .success .tick { background: var(--accent); }
+  #fxPage.top { z-index: 65; }
+  @media (prefers-reduced-motion: reduce) { .fest .ic { animation: none !important; } }
+  .rtag { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 6px; margin-left: 6px; vertical-align: 2px; background: #fff1e0; color: #a45200; }
+  .rtag.ack { background: #e6f4ea; color: #1e7a3c; }
+  .rm-line .again { color: var(--accent-ink); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -186,6 +296,7 @@
 <div class="sheet" id="itemSheet" role="dialog" aria-modal="true"></div>
 <div class="sheet" id="cartSheet" role="dialog" aria-modal="true"></div>
 <div class="sheet" id="histSheet" role="dialog" aria-modal="true"></div>
+<div class="sheet" id="svcSheet" role="dialog" aria-modal="true"></div>
 <div class="success" id="success"></div>
 <div class="lang-menu" id="langMenu"></div>
 <div class="toast" id="toast"></div>
@@ -194,50 +305,85 @@
 'use strict';
 // ---------------- i18n ----------------
 const T = {
-  en: { table: 'Table', orders: 'My orders', viewCart: 'View cart', cart: 'Your order', add: 'Add to order', soldOut: 'Sold out',
-    required: 'Required', optional: 'Optional', pickOne: 'Pick 1', pickAny: 'Pick any', note: 'Special requests', notePh: 'e.g. no spring onion, less oil',
-    placeOrder: 'Place order', total: 'Total', placing: 'Sending…', emptyCart: 'Your cart is empty', clear: 'Clear all',
-    payHint: 'Payment at the counter after your meal', sent: 'Order sent!', sentSub: 'The kitchen has received your order.',
-    enjoy: 'Enjoy your meal! Please pay at the counter.', orderNo: 'Order', orderMore: 'Order more', viewOrders: 'View my orders',
-    noOrders: 'No orders yet from this phone.', histNote: 'Orders placed from this phone today', chooseRequired: 'Please choose',
-    badTable: 'This QR code is not valid', badTableSub: 'Please scan the QR code on your table again, or ask our staff for help.',
-    netErr: 'Network problem, please try again.', soldOutErr: 'Sorry, {x} just sold out. Please remove it from your order.',
-    unavailErr: 'Some items are no longer available. Please check your order.', tooMany: 'Too many orders. Please ask our staff.',
-    added: 'Added to order', items: 'items', addNote: 'Note', language: 'Language', edit: 'Edit',
-    noticeTxt: 'Order here · pay at the counter', confirmClear: 'Clear all items?' },
-  ms: { table: 'Meja', orders: 'Pesanan saya', viewCart: 'Lihat troli', cart: 'Pesanan anda', add: 'Tambah', soldOut: 'Habis dijual',
+  en: { table: 'Table', orders: 'Orders', viewCart: 'View cart', cart: 'Your order', add: 'Add to order', soldOut: 'Sold out',
+    required: 'Required', optional: 'Optional', pickOne: 'Choose 1', pickAny: 'Choose any', note: 'Special requests', notePh: 'e.g. no spring onion, less oil',
+    placeOrder: 'Place order', total: 'Total', placing: 'Sending your order…', emptyCart: 'Your cart is empty. Have a look at our menu!', clear: 'Remove all',
+    payHint: 'Kindly pay at the counter after your meal. Thank you!', sent: 'Thank you for your order!', sentSub: 'Our kitchen has received it and will start preparing shortly.',
+    enjoy: 'Enjoy your meal! Kindly pay at the counter when you are done.', orderNo: 'Order', orderMore: 'Order more', viewOrders: 'View my orders',
+    noOrders: 'You have not placed any orders yet.', chooseRequired: 'Please select',
+    badTable: 'Sorry, we could not recognise this QR code', badTableSub: 'Please scan the QR code on your table again, or ask our staff for help. Thank you!',
+    netErr: 'Sorry, the connection seems unstable. Please try again.', soldOutErr: 'Sorry, {x} has just sold out. Please remove it from your order.',
+    unavailErr: 'Sorry, some items are no longer available. Please review your order.', tooMany: 'Sorry, we could not send this right now. Please ask our staff for help.',
+    addNote: 'Note', language: 'Language', edit: 'Update order',
+    noticeTxt: 'Order from your phone · pay at the counter', confirmClear: 'Remove all items from your cart?', dineIn: 'Dine in', takeaway: 'Take away', howServe: 'Dine in or take away?',
+    voidNote: 'This order has been cancelled by our staff (wrong or duplicate order). It is not included in your bill.', cancelled: 'Cancelled', tabMine: 'My orders', tabTable: 'Whole table', stNew: 'Received', stDone: 'Confirmed', tableTotal: 'Table total',
+    tableNote: 'Everything ordered at your table during this visit', closedT: 'Thank you for dining with us!', closedS: 'We hope to see you again soon. If you would like to order more, please scan the QR code on your table.',
+    specials: 'Today\'s Specials', specialsSub: 'Chef\'s picks for today', viewOrdersBtn: 'View orders', onlyLeft: 'Only {n} left', inCarts: '{n} in other guests\' carts', heldOut: 'Last portions in other guests\' carts', maxLeft: 'Sorry, only {n} left for this dish.', stockErr: 'Sorry, only {n} portion(s) of {x} are available now. We have updated your cart.', reminded: 'Reminder sent', acked: 'Staff is on it', againIn: 'You can remind again in {m} min', cooldown: 'We received your reminder a moment ago. Thank you for your patience!', callStaff: 'Call a staff member', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
+    callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Remind staff: a dish has not arrived yet', callDone: 'Staff notified, coming shortly', remindTitle: 'Which dishes have not arrived yet?',
+    remindSub: 'Please tick the dishes you are still waiting for, and we will let the kitchen know right away.', remindBtn: 'Let the kitchen know',
+    remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
+    busy1: 'We are a little busy right now, so food may take about {m} minutes longer. Thank you for your patience!', busy2: 'We are very busy right now, so food may take about {m} minutes longer. Thank you for your patience and understanding!',
+    pickDish: 'Please tick at least one dish.' },
+  ms: { table: 'Meja', orders: 'Pesanan', viewCart: 'Lihat troli', cart: 'Pesanan anda', add: 'Tambah ke pesanan', soldOut: 'Habis dijual',
     required: 'Wajib', optional: 'Pilihan', pickOne: 'Pilih 1', pickAny: 'Pilih mana-mana', note: 'Permintaan khas', notePh: 'cth. tanpa daun bawang, kurang minyak',
-    placeOrder: 'Hantar pesanan', total: 'Jumlah', placing: 'Menghantar…', emptyCart: 'Troli anda kosong', clear: 'Kosongkan',
-    payHint: 'Bayar di kaunter selepas makan', sent: 'Pesanan dihantar!', sentSub: 'Dapur telah menerima pesanan anda.',
-    enjoy: 'Selamat menjamu selera! Sila bayar di kaunter.', orderNo: 'Pesanan', orderMore: 'Pesan lagi', viewOrders: 'Lihat pesanan saya',
-    noOrders: 'Tiada pesanan dari telefon ini lagi.', histNote: 'Pesanan dari telefon ini hari ini', chooseRequired: 'Sila pilih',
-    badTable: 'Kod QR ini tidak sah', badTableSub: 'Sila imbas semula kod QR di meja anda, atau minta bantuan kakitangan kami.',
-    netErr: 'Masalah rangkaian, sila cuba lagi.', soldOutErr: 'Maaf, {x} baru sahaja habis. Sila buang dari pesanan.',
-    unavailErr: 'Sesetengah item tidak lagi tersedia. Sila semak pesanan anda.', tooMany: 'Terlalu banyak pesanan. Sila minta bantuan kakitangan.',
-    added: 'Ditambah', items: 'item', addNote: 'Nota', language: 'Bahasa', edit: 'Ubah',
-    noticeTxt: 'Pesan di sini · bayar di kaunter', confirmClear: 'Kosongkan semua item?' },
-  zh: { table: '桌号', orders: '我的订单', viewCart: '查看购物车', cart: '已选菜品', add: '加入订单', soldOut: '已售罄',
-    required: '必选', optional: '可选', pickOne: '单选', pickAny: '可多选', note: '备注', notePh: '例如：去葱、少油',
-    placeOrder: '确认下单', total: '合计', placing: '提交中…', emptyCart: '购物车是空的', clear: '清空',
-    payHint: '用餐后请到柜台付款', sent: '下单成功！', sentSub: '厨房已收到您的订单。',
-    enjoy: '祝您用餐愉快！请到柜台付款。', orderNo: '订单', orderMore: '继续点餐', viewOrders: '查看我的订单',
-    noOrders: '这台手机还没有下过订单。', histNote: '这台手机今天的订单', chooseRequired: '请选择',
-    badTable: '二维码无效', badTableSub: '请重新扫描桌上的二维码，或联系店员。',
-    netErr: '网络异常，请重试。', soldOutErr: '抱歉，{x} 刚刚售罄，请从订单中移除。',
-    unavailErr: '部分菜品已下架，请检查订单。', tooMany: '下单过于频繁，请联系店员。',
-    added: '已加入', items: '件', addNote: '备注', language: '语言', edit: '修改',
-    noticeTxt: '扫码点餐 · 柜台付款', confirmClear: '确定清空购物车？' },
+    placeOrder: 'Hantar pesanan', total: 'Jumlah', placing: 'Sedang menghantar pesanan…', emptyCart: 'Troli anda masih kosong. Silakan lihat menu kami!', clear: 'Buang semua',
+    payHint: 'Sila bayar di kaunter selepas makan. Terima kasih!', sent: 'Terima kasih atas pesanan anda!', sentSub: 'Dapur kami telah menerimanya dan akan mula menyediakan sebentar lagi.',
+    enjoy: 'Selamat menjamu selera! Sila bayar di kaunter selepas selesai makan.', orderNo: 'Pesanan', orderMore: 'Pesan lagi', viewOrders: 'Lihat pesanan saya',
+    noOrders: 'Anda belum membuat sebarang pesanan.', chooseRequired: 'Sila pilih',
+    badTable: 'Maaf, kod QR ini tidak dapat dikenal pasti', badTableSub: 'Sila imbas semula kod QR di meja anda, atau minta bantuan kakitangan kami. Terima kasih!',
+    netErr: 'Maaf, sambungan kurang stabil. Sila cuba lagi.', soldOutErr: 'Maaf, {x} baru sahaja habis dijual. Sila buang dari pesanan anda.',
+    unavailErr: 'Maaf, sesetengah item tidak lagi tersedia. Sila semak semula pesanan anda.', tooMany: 'Maaf, permintaan tidak dapat dihantar sekarang. Sila minta bantuan kakitangan kami.',
+    addNote: 'Nota', language: 'Bahasa', edit: 'Kemas kini',
+    noticeTxt: 'Pesan melalui telefon · bayar di kaunter', confirmClear: 'Buang semua item dari troli?', dineIn: 'Makan sini', takeaway: 'Bungkus', howServe: 'Makan sini atau bungkus?',
+    voidNote: 'Pesanan ini telah dibatalkan oleh staf kami (pesanan salah atau berulang). Ia tidak termasuk dalam bil anda.', cancelled: 'Dibatalkan', tabMine: 'Pesanan saya', tabTable: 'Seluruh meja', stNew: 'Diterima', stDone: 'Disahkan', tableTotal: 'Jumlah meja',
+    tableNote: 'Semua pesanan meja anda sepanjang kunjungan ini', closedT: 'Terima kasih kerana menjamu selera bersama kami!', closedS: 'Kami harap dapat berjumpa lagi. Jika ingin memesan lagi, sila imbas kod QR di meja anda.',
+    specials: 'Istimewa Hari Ini', specialsSub: 'Pilihan istimewa untuk hari ini', viewOrdersBtn: 'Lihat pesanan', onlyLeft: 'Tinggal {n} sahaja', inCarts: '{n} dalam troli pelanggan lain', heldOut: 'Bahagian terakhir dalam troli pelanggan lain', maxLeft: 'Maaf, hanya tinggal {n} untuk hidangan ini.', stockErr: 'Maaf, hanya {n} bahagian {x} yang tersedia sekarang. Troli anda telah dikemas kini.', reminded: 'Peringatan dihantar', acked: 'Kakitangan sedang uruskan', againIn: 'Boleh ingatkan semula dalam {m} minit', cooldown: 'Kami baru sahaja menerima peringatan anda. Terima kasih atas kesabaran anda!', callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
+    callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Ingatkan pelayan: hidangan belum sampai', callDone: 'Pelayan dimaklumkan, akan datang', remindTitle: 'Hidangan mana yang belum sampai?',
+    remindSub: 'Sila tandakan hidangan yang masih ditunggu, dan kami akan memaklumkan dapur dengan segera.', remindBtn: 'Maklumkan dapur',
+    remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
+    busy1: 'Kami agak sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran anda!', busy2: 'Kami sangat sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran dan pengertian anda!',
+    pickDish: 'Sila tandakan sekurang-kurangnya satu hidangan.' },
+  zh: { table: '桌号', orders: '订单', viewCart: '查看购物车', cart: '您的订单', add: '加入订单', soldOut: '已售完',
+    required: '必选', optional: '可选', pickOne: '请选 1 项', pickAny: '可多选', note: '特别要求', notePh: '例如：去葱、少油',
+    placeOrder: '确认下单', total: '合计', placing: '正在为您送出订单…', emptyCart: '购物车还是空的，看看喜欢的菜吧！', clear: '全部移除',
+    payHint: '用餐后请到柜台付款，谢谢！', sent: '感谢您的点餐！', sentSub: '厨房已收到您的订单，马上为您准备。',
+    enjoy: '祝您用餐愉快！用餐后请到柜台付款。', orderNo: '订单', orderMore: '继续点餐', viewOrders: '查看我的订单',
+    noOrders: '您目前还没有订单。', chooseRequired: '请选择',
+    badTable: '抱歉，无法识别这个二维码', badTableSub: '请重新扫描桌上的二维码，或请店员协助，谢谢！',
+    netErr: '抱歉，网络不太稳定，请稍后再试。', soldOutErr: '抱歉，{x} 刚刚售完了，请从订单中移除。',
+    unavailErr: '抱歉，部分菜品暂时无法供应，请您再确认一下订单。', tooMany: '抱歉，暂时无法送出，请联系店员协助。',
+    addNote: '备注', language: '语言', edit: '更新订单',
+    noticeTxt: '手机点餐 · 柜台付款', confirmClear: '确定要移除购物车里的全部菜品吗？', dineIn: '堂食', takeaway: '外带', howServe: '请问堂食还是外带？',
+    voidNote: '此单已由员工取消（错误单或重复下单），不计入您的账单。', cancelled: '已取消', tabMine: '我的订单', tabTable: '本桌订单', stNew: '已收到', stDone: '已确认', tableTotal: '本桌合计',
+    tableNote: '本桌这次用餐的所有订单', closedT: '谢谢光临，欢迎再来！', closedS: '期待再次为您服务。如需再点餐，请重新扫描桌上的二维码。',
+    specials: '今日特别', specialsSub: '今天特别推荐，欢迎品尝', viewOrdersBtn: '查看订单', onlyLeft: '仅剩 {n} 份', inCarts: '{n} 份在其他客人的购物车中', heldOut: '最后几份已在其他客人的购物车中', maxLeft: '抱歉，这道菜只剩 {n} 份了。', stockErr: '抱歉，{x} 目前只剩 {n} 份，已为您更新购物车。', reminded: '已提醒', acked: '员工已确认', againIn: '{m} 分钟后可再次提醒', cooldown: '我们刚收到您的提醒，感谢您的耐心等候！', callStaff: '请服务员过来', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
+    callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '提醒服务员：还有菜未上桌', callDone: '已通知服务员，马上过来', remindTitle: '请问哪些菜还没上桌？',
+    remindSub: '请勾选还在等待的菜品，我们会马上通知厨房。', remindBtn: '通知厨房',
+    remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
+    busy1: '目前用餐人数较多，出餐可能需要多等约 {m} 分钟，感谢您的耐心等候！', busy2: '目前非常繁忙，出餐可能需要多等约 {m} 分钟，感谢您的耐心与谅解！',
+    pickDish: '请至少勾选一道菜。' },
 };
 const LANGS = [['en', 'English'], ['ms', 'Bahasa Melayu'], ['zh', '中文']];
 const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
                 set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-let lang = store.get('lang', 'en'); if (!T[lang]) lang = 'en';
+// Language: the guest's own choice if they picked one, otherwise the phone's language (Chinese / Malay), otherwise English.
+function phoneLang() {
+  for (const l of navigator.languages || [navigator.language || '']) {
+    const x = String(l).toLowerCase();
+    if (x.startsWith('zh')) return 'zh';
+    if (x.startsWith('ms')) return 'ms';
+    if (x.startsWith('en')) return 'en';
+  }
+  return 'en';
+}
+let lang = store.get('lang', null) || phoneLang(); if (!T[lang]) lang = 'en';
 const t = (k) => T[lang][k] || T.en[k] || k;
 const L = (o) => (o && (o[lang] || o.en || o.zh || o.ms || Object.values(o)[0])) || '';
 const rm = (sen) => 'RM ' + (sen / 100).toFixed(2);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (id) => document.getElementById(id);
 const ICON = {
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg>',
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
@@ -245,16 +391,22 @@ const ICON = {
   receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></svg>',
   globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>',
   counter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  bowl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 7c0-1.5 1-2 1-3.5M12 7c0-1.5 1-2 1-3.5M16 7c0-1.5 1-2 1-3.5"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
 };
 
 // ---------------- state ----------------
-const tableToken = location.pathname.split('/').pop();
+// Seat = this phone's pass for the table's current dining session (set by scanning the table QR).
+let seat = store.get('seat', null); // {key, table}
 let clientId = store.get('clientId', null);
 if (!clientId) { clientId = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)); store.set('clientId', clientId); }
-const cartKey = 'cart:' + tableToken;
-let cart = store.get(cartKey, []); // [{key, itemId, qty, options:{gid:[cid]}, note}]
-let menu = [], itemsById = new Map(), table = null, config = { name: '' };
+let cartKey = 'cart:' + (seat ? seat.key : '');
+let cart = seat ? store.get(cartKey, []) : []; // [{key, itemId, qty, options:{gid:[cid]}, note}]
+let menu = [], itemsById = new Map(), table = null, config = { name: '' }, seatClosed = false, busy = { level: 0, extra: 0 }, skew = 0, orderCount = 0, allCount = 0, theme = 'default';
+const themeSig = (r) => [r.theme, r.banner, r.effects].join('|');
 let detail = null; // {item, qty, options, note, editKey}
 
 async function api(path, opts) {
@@ -269,40 +421,66 @@ function renderPage() {
   document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
   document.title = config.name || 'Menu';
   const initial = (config.name || 'R').trim().charAt(0).toUpperCase();
-  const tabs = menu.map((c, i) => `<button class="tab${i === 0 ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
-  const sections = menu.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2>${esc(L(c.name))}</h2>${c.items.map(itemRow).join('')}</section>`).join('');
+  const hasSp = menu.some((c) => c.items.some((i) => i.featured));
+  // A dish shown in Today's Specials is not repeated in its own category; it goes back there once the special ends.
+  const cats = menu.map((c) => ({ ...c, items: c.items.filter((i) => !i.featured) })).filter((c) => c.items.length);
+  const tabs = cats.map((c, i) => `<button class="tab${i === 0 && !hasSp ? ' active' : ''}" data-cat="${c.id}">${esc(L(c.name))}</button>`).join('');
+  const specials = menu.flatMap((c) => c.items).filter((i) => i.featured);
+  const specialTab = specials.length ? `<button class="tab tab-sp active" data-cat="special">${ICON.star}${esc(t('specials'))}</button>` : '';
+  const specialSec = specials.length ? `<section class="section specials" id="cat-special" data-cat="special"><h2><span class="sp-ic">${ICON.star}</span>${esc(t('specials'))}<span class="cnt">${specials.length}</span></h2><p class="sp-sub">${esc(t('specialsSub'))}</p>${specials.map(itemRow).join('')}</section>` : '';
+  const sections = cats.map((c) => `<section class="section" id="cat-${c.id}" data-cat="${c.id}"><h2><span class="bar"></span>${esc(L(c.name))}<span class="cnt">${c.items.length}</span></h2>${c.items.map(itemRow).join('')}</section>`).join('');
   $('app').innerHTML = `
     <header class="hero">
+      <div id="festBar"></div>
       <div class="hero-top">
-        <div class="brand"><div class="logo">${esc(initial)}</div>
-          <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>
+        ${config.logo ? `<div class="brand has-logo"><img class="brand-logo" src="${esc(config.logo)}" alt="${esc(config.name)}"><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div>`
+        : `<div class="brand"><div class="logo">${esc(initial)}</div>
+          <div style="min-width:0"><h1>${esc(config.name)}</h1><span class="table-pill">${esc(t('table'))} ${esc(table.name)}</span></div></div>`}
         <div class="hero-actions">
-          <button class="icon-btn" id="histBtn" aria-label="${esc(t('orders'))}">${ICON.receipt}</button>
-          <button class="icon-btn" id="langBtn" aria-label="${esc(t('language'))}">${ICON.globe}<span>${{ en: 'EN', ms: 'BM', zh: '中' }[lang]}</span></button>
+          <button class="icon-btn" id="langBtn" aria-label="${esc(t('language'))}"><span>${{ en: 'EN', ms: 'BM', zh: '中' }[lang]}</span></button>
         </div>
       </div>
       <div class="notice">${ICON.counter.replace('<svg', '<svg width="16" height="16"')}<span>${esc(t('noticeTxt'))}</span></div>
+      <div class="act-row">
+        <button class="call-btn${callCooldown > Date.now() ? ' sent' : ''}" id="callBtn">${callCooldown > Date.now() ? ICON.check + esc(t('callDone')) : ICON.bell + esc(t('callStaff'))}</button>
+        <button class="orders-btn" id="histBtn" ${allCount ? '' : 'disabled'}>${ICON.receipt}${esc(t('viewOrdersBtn'))}${orderCount ? `<b>${orderCount}</b>` : ''}</button>
+      </div>
+      <div id="busyBar">${busyHTML()}</div>
     </header>
-    <nav class="tabs"><div class="tabs-scroll" id="tabs">${tabs}</div></nav>
-    <main>${sections}</main>
+    <nav class="tabs"><div class="tabs-scroll" id="tabs">${specialTab}${tabs}</div></nav>
+    <main>${specialSec}${sections}</main>
     <div class="footer-space">${esc(config.name)}</div>`;
+  applyTheme();
   $('histBtn').onclick = openHistory;
+  $('callBtn').onclick = openCall;
   $('langBtn').onclick = (e) => { e.stopPropagation(); toggleLang(); };
   $('tabs').onclick = (e) => { const b = e.target.closest('.tab'); if (!b) return; const s = $('cat-' + b.dataset.cat);
-    scrollLock = Date.now(); setActiveTab(b.dataset.cat); window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 56, behavior: 'smooth' }); };
+    scrollLock = Date.now(); setActiveTab(b.dataset.cat); window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 62, behavior: 'smooth' }); };
   document.querySelector('main').onclick = (e) => { const row = e.target.closest('.item'); if (!row || row.classList.contains('soldout')) return; openItem(Number(row.dataset.id)); };
   renderCartBar();
 }
 function thumb(item, cls = 'thumb') {
   return item.image ? `<img class="${cls}" src="${esc(item.image)}" alt="" loading="lazy">` : `<div class="${cls}">${ICON.dish}</div>`;
 }
+// Limited dishes: what this guest can still add = remaining portions − portions in other guests' carts − own cart.
+const inCartQty = (id, exceptKey) => cart.filter((l) => l.itemId === id && l.key !== exceptKey).reduce((s, l) => s + l.qty, 0);
+const canAdd = (it, exceptKey) => it.stock == null ? 50 : Math.max(0, it.stock - (it.held || 0) - (it.mine || 0) - inCartQty(it.id, exceptKey));
+function stockNote(it) {
+  if (it.stock == null || it.soldOut) return '';
+  const parts = [];
+  const left = canAdd(it); // what is still free after other carts and this guest's own cart
+  if (left > 0) parts.push(t('onlyLeft').replace('{n}', left));
+  if (it.held) parts.push(it.stock - it.held <= 0 ? t('heldOut') : t('inCarts').replace('{n}', it.held));
+  return parts.length ? `<div class="stock-note${left <= 0 ? ' out' : ''}">${esc(parts.join(' · '))}</div>` : '';
+}
 function itemRow(it) {
-  const inCart = cart.filter((l) => l.itemId === it.id).reduce((s, l) => s + l.qty, 0);
-  return `<div class="item${it.soldOut ? ' soldout' : ''}" data-id="${it.id}">
+  const inCart = inCartQty(it.id);
+  const blocked = !it.soldOut && it.stock != null && canAdd(it) <= 0 && !inCart;
+  return `<div class="item${it.soldOut || blocked ? ' soldout' : ''}" data-id="${it.id}">
     <div class="item-info"><div class="item-name">${esc(L(it.name))}</div>${L(it.description) ? `<div class="item-desc">${esc(L(it.description))}</div>` : ''}
-      <div class="item-price">${rm(it.price)}</div></div>
+      ${stockNote(it)}<div class="item-price">${rm(it.price)}</div></div>
     <div class="item-media">${thumb(it)}
-      ${it.soldOut ? `<span class="soldout-tag">${esc(t('soldOut'))}</span>` : `<span class="add-btn" aria-hidden="true">${ICON.plus}</span>`}
+      ${it.soldOut ? `<span class="soldout-tag">${esc(t('soldOut'))}</span>` : blocked ? '' : `<span class="add-btn" aria-hidden="true">${ICON.plus}</span>`}
       ${inCart ? `<span class="qty-badge">${inCart}</span>` : ''}</div></div>`;
 }
 
@@ -331,17 +509,23 @@ document.addEventListener('click', (e) => { if (!e.target.closest('#langMenu')) 
 
 // ---------------- sheets ----------------
 let openSheet = null;
-function showSheet(el) { closeSheets(); openSheet = el; el.classList.add('show'); $('scrim').classList.add('show'); document.body.style.overflow = 'hidden'; }
-function closeSheets() { document.querySelectorAll('.sheet.show').forEach((s) => s.classList.remove('show')); $('scrim').classList.remove('show'); document.body.style.overflow = ''; openSheet = null; }
+// Lock the page behind sheets / success screen (position:fixed is the only reliable way on iOS Safari).
+let lockY = 0, lockCount = 0;
+function lockScroll() { if (lockCount++) return; lockY = window.scrollY; document.body.style.top = -lockY + 'px'; document.body.classList.add('locked'); }
+function unlockScroll() { if (!lockCount || --lockCount) return; document.body.classList.remove('locked'); document.body.style.top = ''; window.scrollTo(0, lockY); }
+function showSheet(el) { closeSheets(); openSheet = el; el.classList.add('show'); $('scrim').classList.add('show'); lockScroll(); }
+function closeSheets() { const had = !!openSheet; document.querySelectorAll('.sheet.show').forEach((s) => s.classList.remove('show')); $('scrim').classList.remove('show'); openSheet = null; if (had) unlockScroll(); }
+$('scrim').addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 $('scrim').onclick = closeSheets;
 
 // ---------------- item detail ----------------
 function openItem(id, editKey) {
   const it = itemsById.get(id); if (!it || it.soldOut) return;
+  if (!editKey && canAdd(it) <= 0) return toast(t('maxLeft').replace('{n}', Math.max(0, it.stock - (it.held || 0) - (it.mine || 0))));
   const existing = editKey ? cart.find((l) => l.key === editKey) : null;
   const options = existing ? JSON.parse(JSON.stringify(existing.options)) : {};
   if (!existing) it.options.forEach((g) => { if (g.type === 'single' && g.required && g.choices.length === 1) options[g.id] = [g.choices[0].id]; });
-  detail = { item: it, qty: existing ? existing.qty : 1, options, note: existing ? existing.note : '', editKey };
+  detail = { item: it, qty: existing ? existing.qty : 1, options, note: existing ? existing.note : '', takeaway: existing ? !!existing.takeaway : false, editKey };
   renderItem(); showSheet($('itemSheet'));
 }
 function unitPrice(it, options) {
@@ -365,6 +549,9 @@ function renderItem() {
       ${it.image ? `<img class="detail-img" src="${esc(it.image)}" alt="">` : `<div class="detail-ph">${ICON.dish}</div>`}
       <div class="detail-main"><h3>${esc(L(it.name))}</h3>${L(it.description) ? `<p>${esc(L(it.description))}</p>` : ''}<div class="price">${rm(it.price)}</div></div>
       ${groups}
+      <div class="serve"><b>${esc(t('howServe'))}</b><div class="seg2" id="serveSeg">
+        <button type="button" data-ta="0" class="${detail.takeaway ? '' : 'on'}">${ICON.bowl.replace('<svg', '<svg width="18" height="18"')} ${esc(t('dineIn'))}</button>
+        <button type="button" data-ta="1" class="ta ${detail.takeaway ? 'on' : ''}">${ICON.bag.replace('<svg', '<svg width="18" height="18"')} ${esc(t('takeaway'))}</button></div></div>
       <div class="note-wrap"><b>${esc(t('note'))} <span class="badge">${esc(t('optional'))}</span></b>
         <textarea id="noteInput" rows="2" maxlength="120" placeholder="${esc(t('notePh'))}">${esc(detail.note)}</textarea></div>
     </div>
@@ -388,7 +575,11 @@ function renderItem() {
   }));
   sh.querySelectorAll('.choice').forEach((lab) => lab.addEventListener('pointerdown', () => { const i = lab.querySelector('input'); detail._wasChecked = i.checked ? i.value : null; }));
   $('noteInput').oninput = (e) => { detail.note = e.target.value; };
-  sh.querySelectorAll('[data-q]').forEach((b) => b.onclick = () => { detail.qty = Math.max(1, Math.min(50, detail.qty + Number(b.dataset.q))); refreshItemFoot(); });
+  sh.querySelectorAll('[data-ta]').forEach((b) => b.onclick = () => { detail.takeaway = b.dataset.ta === '1';
+    sh.querySelectorAll('[data-ta]').forEach((x) => x.classList.toggle('on', x === b)); });
+  sh.querySelectorAll('[data-q]').forEach((b) => b.onclick = () => { const max = Math.min(50, canAdd(detail.item, detail.editKey));
+    if (Number(b.dataset.q) > 0 && detail.qty >= max) return toast(t('maxLeft').replace('{n}', Math.max(0, detail.item.stock - (detail.item.held || 0) - (detail.item.mine || 0))));
+    detail.qty = Math.max(1, Math.min(max, detail.qty + Number(b.dataset.q))); refreshItemFoot(); });
   $('addBtn').onclick = addDetailToCart;
 }
 function refreshItemFoot() {
@@ -408,19 +599,54 @@ function addDetailToCart() {
   }
   const options = {}; Object.entries(detail.options).forEach(([k, v]) => { if (v.length) options[k] = [...v].sort(); });
   const note = detail.note.trim();
+  if (detail.qty > canAdd(detail.item, detail.editKey)) return toast(t('maxLeft').replace('{n}', Math.max(0, detail.item.stock - (detail.item.held || 0) - (detail.item.mine || 0))));
   if (detail.editKey) cart = cart.filter((l) => l.key !== detail.editKey);
-  const same = cart.find((l) => l.itemId === detail.item.id && JSON.stringify(l.options) === JSON.stringify(options) && l.note === note);
+  const takeaway = !!detail.takeaway;
+  const same = cart.find((l) => l.itemId === detail.item.id && JSON.stringify(l.options) === JSON.stringify(options) && l.note === note && !!l.takeaway === takeaway);
   if (same) same.qty = Math.min(50, same.qty + detail.qty);
-  else cart.push({ key: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), itemId: detail.item.id, qty: detail.qty, options, note });
+  else cart.push({ key: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), itemId: detail.item.id, qty: detail.qty, options, note, takeaway });
   saveCart(); const wasEdit = detail.editKey; closeSheets(); $('toast').classList.remove('show');
   if (wasEdit) openCart(); else { $('cartbar').classList.remove('bump'); void $('cartbar').offsetWidth; $('cartbar').classList.add('bump'); }
 }
 
 // ---------------- cart ----------------
+function refreshRows() { document.querySelectorAll('.item').forEach((row) => { const it = itemsById.get(Number(row.dataset.id)); if (it) row.outerHTML = itemRow(it); }); }
 function saveCart() {
   cart = cart.filter((l) => itemsById.has(l.itemId));
-  store.set(cartKey, cart); renderCartBar();
-  document.querySelectorAll('.item').forEach((row) => { const it = itemsById.get(Number(row.dataset.id)); if (it) row.outerHTML = itemRow(it); });
+  store.set(cartKey, cart); renderCartBar(); refreshRows(); syncHolds();
+}
+// Tell the server which limited dishes sit in this cart, so other guests see them as taken (for 5 minutes).
+let holdsSig = '';
+async function syncHolds(force) {
+  if (!seat || seatClosed) return;
+  const holds = []; cart.forEach((l) => { const it = itemsById.get(l.itemId); if (it && it.stock != null) holds.push({ itemId: l.itemId, qty: l.qty }); });
+  const sig = JSON.stringify(holds); if (!force && sig === holdsSig) return; holdsSig = sig;
+  if (!holds.length && !force && sig === '[]' && !syncHolds.had) return; syncHolds.had = holds.length > 0;
+  try {
+    const r = await api('/api/holds', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seat: seat.key, clientId, holds }) });
+    applyAvail(r.avail);
+    // The server could not reserve everything (someone else was faster): trim the cart.
+    let trimmed = null;
+    for (const [id, g] of Object.entries(r.granted)) {
+      let over = inCartQty(Number(id)) - g;
+      for (const l of [...cart].reverse()) { if (over <= 0 || l.itemId !== Number(id)) continue; const cut = Math.min(over, l.qty); l.qty -= cut; over -= cut; trimmed = itemsById.get(l.itemId); }
+    }
+    if (trimmed) { cart = cart.filter((l) => l.qty > 0); store.set(cartKey, cart); renderCartBar(); refreshRows(); holdsSig = '';
+      toast(t('stockErr').replace('{n}', Math.max(0, trimmed.stock - (trimmed.held || 0) - (trimmed.mine || 0))).replace('{x}', L(trimmed.name))); if (openSheet === $('cartSheet')) { if (cart.length) renderCart(); else closeSheets(); } }
+  } catch {}
+}
+// The same phone with the menu open in two tabs shares one cart: keep them in step.
+window.addEventListener('storage', (e) => { if (e.key && e.key.endsWith(cartKey)) { cart = store.get(cartKey, []); renderCartBar(); refreshRows(); if (openSheet === $('cartSheet')) { if (cart.length) renderCart(); else closeSheets(); } } });
+setInterval(() => { if (document.visibilityState === 'visible' && cart.some((l) => itemsById.get(l.itemId)?.stock != null)) syncHolds(true); }, 60000);
+// Live availability from the server: { itemId: { soldOut, stock, held } } (dishes not listed are normal).
+function applyAvail(avail) {
+  if (!avail) return; let changed = false, hide = false;
+  for (const it of itemsById.values()) {
+    const a = avail[it.id] || { soldOut: false, stock: null, held: 0 };
+    if (it.soldOut !== a.soldOut || it.stock !== a.stock || (it.held || 0) !== a.held || (it.mine || 0) !== (a.mine || 0)) { if (config.hideSoldOut && a.soldOut && !it.soldOut) hide = true; it.soldOut = a.soldOut; it.stock = a.stock; it.held = a.held; it.mine = a.mine || 0; changed = true; }
+  }
+  if (hide) return reloadMenu().catch(() => {}); // shop hides sold-out dishes: take it off the menu
+  if (changed) refreshRows();
 }
 const lineUnit = (l) => unitPrice(itemsById.get(l.itemId), l.options);
 const cartTotal = () => cart.reduce((s, l) => s + lineUnit(l) * l.qty, 0);
@@ -437,7 +663,7 @@ function optText(it, options) {
 function openCart() { renderCart(); showSheet($('cartSheet')); }
 function renderCart() {
   const lines = cart.map((l) => { const it = itemsById.get(l.itemId); const o = optText(it, l.options);
-    return `<div class="cart-line" data-k="${l.key}"><div class="info" data-edit="${l.key}" style="cursor:pointer"><div class="nm">${esc(L(it.name))}</div>
+    return `<div class="cart-line" data-k="${l.key}"><div class="info" data-edit="${l.key}" style="cursor:pointer"><div class="nm">${esc(L(it.name))}${l.takeaway ? `<span class="ta-tag">${esc(t('takeaway'))}</span>` : ''}</div>
       ${o ? `<div class="opts">${esc(o)}</div>` : ''}${l.note ? `<div class="nt">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}
       <div class="pr">${rm(lineUnit(l) * l.qty)}</div></div>
       <div class="stepper sm"><button data-d="-1">${ICON.minus}</button><span>${l.qty}</span><button data-d="1">${ICON.plus}</button></div></div>`; }).join('');
@@ -450,6 +676,7 @@ function renderCart() {
   const sh = $('cartSheet');
   sh.querySelector('[data-close]').onclick = closeSheets;
   sh.querySelectorAll('[data-d]').forEach((b) => b.onclick = () => { const k = b.closest('.cart-line').dataset.k; const l = cart.find((x) => x.key === k);
+    if (Number(b.dataset.d) > 0 && canAdd(itemsById.get(l.itemId)) <= 0) return toast(t('maxLeft').replace('{n}', Math.max(0, itemsById.get(l.itemId).stock - (itemsById.get(l.itemId).held || 0) - (itemsById.get(l.itemId).mine || 0))));
     l.qty += Number(b.dataset.d); if (l.qty <= 0) cart = cart.filter((x) => x !== l); l.qty = Math.min(50, l.qty); saveCart(); if (cart.length) renderCart(); else closeSheets(); });
   sh.querySelectorAll('[data-edit]').forEach((d) => d.onclick = () => { const l = cart.find((x) => x.key === d.dataset.edit); openItem(l.itemId, l.key); });
   if ($('clearBtn')) $('clearBtn').onclick = () => { if (confirm(t('confirmClear'))) { cart = []; saveCart(); closeSheets(); } };
@@ -461,11 +688,13 @@ async function placeOrder() {
   const btn = $('placeBtn'); btn.disabled = true; btn.innerHTML = `<span style="flex:1;text-align:center">${esc(t('placing'))}</span>`;
   try {
     const res = await api('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ table: tableToken, clientId, lines: cart.map((l) => ({ itemId: l.itemId, qty: l.qty, options: l.options, note: l.note })) }) });
-    const snapshot = cart.map((l) => ({ name: itemsById.get(l.itemId).name, qty: l.qty, opts: optText(itemsById.get(l.itemId), l.options), note: l.note, sum: lineUnit(l) * l.qty }));
-    cart = []; saveCart(); closeSheets(); showSuccess(res, snapshot);
+      body: JSON.stringify({ seat: seat.key, clientId, lines: cart.map((l) => ({ itemId: l.itemId, qty: l.qty, options: l.options, note: l.note, takeaway: !!l.takeaway })) }) });
+    const snapshot = cart.map((l) => ({ name: itemsById.get(l.itemId).name, qty: l.qty, opts: optText(itemsById.get(l.itemId), l.options), note: l.note, takeaway: !!l.takeaway, sum: lineUnit(l) * l.qty }));
+    cart = []; holdsSig = ''; saveCart(); orderCount++; allCount++; renderOrdersBtn(); closeSheets(); showSuccess(res, snapshot);
   } catch (e) {
-    if (e.data?.error === 'SOLD_OUT') { toast(t('soldOutErr').replace('{x}', L(e.data.itemName))); await reloadMenu(); }
+    if (e.data?.error === 'SEAT_CLOSED') { closeSheets(); return showClosed(); }
+    if (e.data?.error === 'STOCK') { toast(t('stockErr').replace('{n}', e.data.left).replace('{x}', L(e.data.itemName))); holdsSig = ''; await reloadMenu(); syncHolds(true); }
+    else if (e.data?.error === 'SOLD_OUT') { toast(t('soldOutErr').replace('{x}', L(e.data.itemName))); await reloadMenu(); }
     else if (e.data?.error === 'ITEM_UNAVAILABLE' || e.data?.error === 'BAD_OPTION' || e.data?.error === 'OPTION_REQUIRED') { toast(t('unavailErr')); await reloadMenu(); }
     else if (e.status === 429) toast(t('tooMany'));
     else toast(t('netErr'));
@@ -473,40 +702,246 @@ async function placeOrder() {
   } finally { placing = false; }
 }
 function showSuccess(res, snapshot) {
-  const rows = snapshot.map((l) => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${l.opts ? `<div class="o">${esc(l.opts)}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(l.sum)}</b></div>`).join('');
+  const rows = snapshot.map((l) => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${l.takeaway ? `<span class="ta-tag">${esc(t('takeaway'))}</span>` : ''}${l.opts ? `<div class="o">${esc(l.opts)}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(l.sum)}</b></div>`).join('');
   $('success').innerHTML = `
     <div class="tick">${ICON.check}</div>
     <h2>${esc(t('sent'))}</h2><p class="sub">${esc(t('orderNo'))} #${res.seq} · ${esc(t('table'))} ${esc(table.name)}</p>
     <div class="pay-card">${ICON.counter}<span>${esc(t('enjoy'))}</span></div>
     <div class="receipt">${rows}<div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(res.total)}</span></div></div>
     <div class="success-actions"><button class="primary center" id="moreBtn">${esc(t('orderMore'))}</button><button class="ghost" id="seeBtn">${esc(t('viewOrders'))}</button></div>`;
-  $('success').classList.add('show'); $('success').scrollTop = 0; renderCartBar();
-  $('moreBtn').onclick = () => { $('success').classList.remove('show'); renderCartBar(); window.scrollTo(0, 0); };
-  $('seeBtn').onclick = () => { $('success').classList.remove('show'); renderCartBar(); openHistory(); };
+  $('success').classList.add('show'); document.body.classList.add('success-open'); fxShower(4500, true); lockScroll(); $('success').scrollTop = 0; renderCartBar();
+  const hideSuccess = () => { $('success').classList.remove('show'); document.body.classList.remove('success-open'); unlockScroll(); renderCartBar(); };
+  $('moreBtn').onclick = () => { hideSuccess(); window.scrollTo(0, 0); };
+  $('seeBtn').onclick = () => { hideSuccess(); openHistory(); };
 }
 
-// ---------------- history ----------------
+// ---------------- history (auto-refreshes while open) ----------------
+let histTab = 'mine', histOrders = [], histTimer = null, reminders = {}, remindCool = 180000;
+const fmtTime = (ms) => new Date(ms).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : lang === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' });
+const statusChip = (o) => o.status === 'void' ? `<span class="void-tag">${esc(t('cancelled'))}</span>` : `<span class="st ${o.status === 'done' ? 'done' : 'new'}">${esc(t(o.status === 'done' ? 'stDone' : 'stNew'))}</span>`;
+const remTag = (oid, i) => { const r = reminders[oid + ':' + i]; return r ? `<span class="rtag${r.handled ? ' ack' : ''}">${esc(t(r.handled ? 'acked' : 'reminded'))}</span>` : ''; };
+const taTag = (l) => l.takeaway ? `<span class="ta-tag">${esc(t('takeaway'))}</span>` : '';
+const lineRow = (l, sum, tag = '') => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${taTag(l)}${tag}${l.options.length ? `<div class="o">${esc(l.options.map((x) => L(x.choice)).join(' · '))}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(sum)}</b></div>`;
+const emptyHTML = (msg) => `<div class="empty">${ICON.receipt.replace('<svg', '<svg width="40" height="40"')}<p>${esc(msg)}</p></div>`;
+async function fetchSeatOrders() {
+  try { const r = await api('/api/seat-orders?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); histOrders = r.orders; reminders = r.reminders || {}; remindCool = r.cooldownMs || remindCool; skew = r.now - Date.now(); return true; }
+  catch (e) { if (e.data?.error === 'SEAT_CLOSED') { showClosed(); return false; } return null; }
+}
+function drawHistory() {
+  const sh = $('histSheet'); if (!sh.classList.contains('show')) return;
+  sh.querySelectorAll('[data-h]').forEach((b) => { b.classList.toggle('on', b.dataset.h === histTab); b.onclick = () => { histTab = b.dataset.h; drawHistory(); }; });
+  const body = sh.querySelector('.sheet-body'); const keep = body.scrollTop;
+  const live = histOrders.filter((o) => o.status !== 'void');
+  const cta = live.length ? `<button class="remind-cta" id="remindCta">${ICON.bell}<span>${esc(t('notArrived'))}</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>` : '';
+  if (histTab === 'mine') {
+    const mine = histOrders.filter((o) => o.mine);
+    body.innerHTML = mine.length ? cta + mine.map((o) => `
+      <div class="hist${o.status === 'void' ? ' void' : ''}"><div class="hist-head"><b>${esc(t('orderNo'))} #${o.seq}${statusChip(o)}</b><span>${fmtTime(o.createdAt)}</span></div>
+        ${o.status === 'void' ? `<p class="void-note">${esc(t('voidNote'))}</p>` : ''}
+        ${o.lines.map((l, i) => lineRow(l, l.unit * l.qty, o.status === 'void' ? '' : remTag(o.id, i))).join('')}
+        <div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(o.total)}</span></div></div>`).join('') + '<div style="height:16px"></div>'
+      : emptyHTML(t('noOrders'));
+  } else {
+    // Whole table: merge identical dishes from every phone into one simple list + table total.
+    const merged = new Map(); let total = 0;
+    live.forEach((o) => { total += o.total; o.lines.forEach((l) => {
+      const k = JSON.stringify([l.itemId, l.options.map((x) => x.choice.en), l.note, !!l.takeaway]);
+      const m = merged.get(k); if (m) { m.qty += l.qty; m.sum += l.unit * l.qty; } else merged.set(k, { ...l, sum: l.unit * l.qty });
+    }); });
+    body.innerHTML = merged.size ? `<p class="sheet-sub">${esc(t('tableNote'))} · ${esc(t('table'))} ${esc(table.name)}</p>
+      <div class="hist">${[...merged.values()].map((l) => lineRow(l, l.sum)).join('')}</div>
+      <div class="table-sum"><span>${esc(t('tableTotal'))}</span><span>${rm(total)}</span></div>
+      <div class="pay-hint">${ICON.counter}<span>${esc(t('payHint'))}</span></div>${cta}`
+      : emptyHTML(t('noOrders'));
+  }
+  body.scrollTop = keep;
+  if ($('remindCta')) $('remindCta').onclick = openRemind;
+}
 async function openHistory() {
   $('histSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('orders'))}</h3><button class="close" data-close>${ICON.close}</button></div>
+    <div class="htabs"><button data-h="mine">${esc(t('tabMine'))}</button><button data-h="table">${esc(t('tabTable'))}</button></div>
     <div class="sheet-body"><div class="skeleton"><div class="sk" style="height:140px"></div></div></div>`;
   $('histSheet').querySelector('[data-close]').onclick = closeSheets;
   showSheet($('histSheet'));
-  let orders = [];
-  try { orders = (await api('/api/my-orders?clientId=' + encodeURIComponent(clientId))).orders; } catch { toast(t('netErr')); }
-  const fmtTime = (ms) => new Date(ms).toLocaleTimeString(lang === 'zh' ? 'zh-CN' : lang === 'ms' ? 'ms-MY' : 'en-MY', { hour: '2-digit', minute: '2-digit' });
-  const body = orders.length ? `<div style="padding:0 16px;color:var(--muted);font-size:13px">${esc(t('histNote'))}</div>` + orders.map((o) => `
-    <div class="hist"><div class="hist-head"><b>${esc(t('orderNo'))} #${o.seq}</b><span>${esc(t('table'))} ${esc(o.table)} · ${fmtTime(o.createdAt)}</span></div>
-      ${o.lines.map((l) => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${l.options.length ? `<div class="o">${esc(l.options.map((x) => L(x.choice)).join(' · '))}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(l.unit * l.qty)}</b></div>`).join('')}
-      <div class="receipt-row tot"><span>${esc(t('total'))}</span><span>${rm(o.total)}</span></div></div>`).join('') + '<div style="height:16px"></div>'
-    : `<div class="empty">${ICON.receipt.replace('<svg', '<svg width="40" height="40"')}<p>${esc(t('noOrders'))}</p></div>`;
-  $('histSheet').querySelector('.sheet-body').innerHTML = body;
+  const ok = await fetchSeatOrders(); if (ok === false) return; if (ok === null) toast(t('netErr'));
+  drawHistory();
+  clearInterval(histTimer);
+  histTimer = setInterval(async () => {   // keep "Confirmed" status and the whole-table list up to date
+    if (!$('histSheet').classList.contains('show')) return clearInterval(histTimer);
+    if (await fetchSeatOrders()) drawHistory();
+  }, 3000);
 }
+
+// ---------------- call staff ----------------
+// One tap: "please come to our table". Button shows a confirmation for a minute to avoid repeated taps.
+let callCooldown = 0;
+async function openCall() {
+  if (callCooldown > Date.now()) return toast(t('callSent'));
+  if (await sendService({ type: 'call', reason: 'other' }, t('callSent'))) {
+    callCooldown = Date.now() + 60000; renderCallBtn(); setTimeout(renderCallBtn, 60500);
+  }
+}
+function renderOrdersBtn() {
+  const b = $('histBtn'); if (!b) return;
+  b.disabled = !allCount; b.innerHTML = ICON.receipt + esc(t('viewOrdersBtn')) + (orderCount ? `<b>${orderCount}</b>` : '');
+}
+function renderCallBtn() {
+  const b = $('callBtn'); if (!b) return; const on = callCooldown > Date.now();
+  b.classList.toggle('sent', on); b.innerHTML = on ? ICON.check + esc(t('callDone')) : ICON.bell + esc(t('callStaff'));
+}
+async function sendService(payload, okMsg) {
+  try { await api('/api/service', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seat: seat.key, ...payload }) }); closeSheets(); toast(okMsg); return true; }
+  catch (e) { if (e.data?.error === 'SEAT_CLOSED') { showClosed(); return false; } toast(e.data?.error === 'COOLDOWN' ? t('cooldown') : e.status === 429 ? t('tooMany') : t('netErr')); return false; }
+}
+
+// ---------------- "still waiting for a dish?" ----------------
+async function openRemind() {
+  if (await fetchSeatOrders() === false) return;
+  const now = Date.now() + skew;
+  const lines = histOrders.filter((o) => o.status !== 'void').flatMap((o) => o.lines.map((l, i) => {
+    const due = o.createdAt + ((l.cookMinutes || 15) + busy.extra) * 60000;
+    const rem = reminders[o.id + ':' + i]; const coolLeft = rem ? rem.at + remindCool - now : 0;
+    return { o, l, i, rem, cooling: coolLeft > 0, coolMin: Math.max(1, Math.ceil(coolLeft / 60000)), overdue: now >= due, mins: Math.max(1, Math.ceil((due - now) / 60000)) };
+  }));
+  const ok = (x) => x.overdue && !x.cooling;
+  const any = lines.some(ok);
+  const sub = (x) => x.cooling ? `<span class="again">${esc(t('againIn').replace('{m}', x.coolMin))}</span>` : x.overdue ? '' : esc(t('usually').replace('{m}', x.mins));
+  $('svcSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('remindTitle'))}</h3><button class="close" data-close>${ICON.close}</button></div>
+    <p class="sheet-sub">${esc(any ? t('remindSub') : lines.some((x) => x.overdue) ? t('cooldown') : t('noneOverdue'))}</p>
+    <div class="sheet-body">${lines.map((x) => { const s2 = sub(x); return `<label class="rm-line${ok(x) ? '' : ' wait'}"><input type="checkbox" ${ok(x) ? '' : 'disabled'} data-o="${x.o.id}" data-i="${x.i}"><span class="mark box"></span>
+      <div class="info"><div><b>${x.l.qty} × ${esc(L(x.l.name))}</b>${taTag(x.l)}${remTag(x.o.id, x.i)}</div><div class="sub">${esc(t('orderNo'))} #${x.o.seq} · ${fmtTime(x.o.createdAt)}${s2 ? ' · ' + s2 : ''}</div></div></label>`; }).join('')}</div>
+    <div class="sheet-foot"><button class="primary center" id="remindSend" ${any ? '' : 'disabled'}>${esc(t('remindBtn'))}</button></div>`;
+  const sh = $('svcSheet'); sh.querySelector('[data-close]').onclick = closeSheets;
+  $('remindSend').onclick = async () => {
+    const items = [...sh.querySelectorAll('input:checked')].map((c) => ({ orderId: Number(c.dataset.o), line: Number(c.dataset.i) }));
+    if (!items.length) return toast(t('pickDish'));
+    if (await sendService({ type: 'remind', items }, t('remindSent')) && await fetchSeatOrders()) drawHistory();
+  };
+  showSheet(sh);
+}
+
+// ---------------- festival themes ----------------
+const FEST_ICON = {
+  cny: '<svg viewBox="0 0 32 32"><path d="M16 2v4" stroke="currentColor" stroke-width="2"/><rect x="11" y="5" width="10" height="3" rx="1" fill="currentColor"/><ellipse cx="16" cy="16" rx="10" ry="8.5" fill="currentColor"/><path d="M16 8v16M11 9.5c-2 4-2 9 0 13M21 9.5c2 4 2 9 0 13" stroke="#b3121b" stroke-width="1.3" fill="none"/><rect x="11" y="24" width="10" height="3" rx="1" fill="currentColor"/><path d="M14 27v4M16 27v4M18 27v4" stroke="currentColor" stroke-width="1.4"/></svg>',
+  merdeka: '<svg viewBox="0 0 32 32"><path d="M18 5a11 11 0 1 0 0 22 9 9 0 1 1 0-22z" fill="currentColor"/><path d="M24 10l1.2 3.6 3.8-.1-3.1 2.2 1.2 3.6-3.1-2.2-3.1 2.2 1.2-3.6-3.1-2.2 3.8.1z" fill="currentColor"/></svg>',
+  raya: '<svg viewBox="0 0 32 32"><path d="M16 1v5" stroke="currentColor" stroke-width="1.6"/><path d="M16 6l10 10-10 10L6 16z" fill="currentColor"/><path d="M11 11l10 10M21 11L11 21M13.5 8.5l10 10M18.5 8.5l-10 10" stroke="#0b5a33" stroke-width="1.2"/><path d="M14 26l-2 5M18 26l2 5" stroke="currentColor" stroke-width="1.6"/></svg>',
+  deepavali: '<svg viewBox="0 0 32 32"><path d="M16 4c3 4 3 7 0 10-3-3-3-6 0-10z" fill="#ffd166"/><path d="M4 17h24c-1 6-6 10-12 10S5 23 4 17z" fill="currentColor"/><path d="M10 27h12" stroke="currentColor" stroke-width="2"/></svg>',
+  gawai: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M16 31V9c0-4 3-6 6-7M16 16c-4-1-7-4-8-8M16 22c4-1 7-3 9-7"/><g fill="currentColor" stroke="none"><ellipse cx="22" cy="3" rx="2" ry="1.2"/><ellipse cx="8" cy="7" rx="1.3" ry="2"/><ellipse cx="25" cy="14" rx="2" ry="1.2"/><ellipse cx="10" cy="11" rx="1.3" ry="2"/><ellipse cx="20" cy="18" rx="2" ry="1.2"/></g></svg>',
+  christmas: '<svg viewBox="0 0 32 32"><path d="M16 2l2 4h-4z" fill="#ffd166"/><path d="M16 5l7 9h-4l6 8h-5l5 6H7l5-6H7l6-8H9z" fill="currentColor"/><rect x="14" y="28" width="4" height="3" fill="#8b5a2b"/><circle cx="13" cy="17" r="1.3" fill="#ffd166"/><circle cx="19" cy="21" r="1.3" fill="#ff6b6b"/><circle cx="15" cy="24" r="1.3" fill="#ffd166"/></svg>',
+};
+const FEST_TEXT = {
+  cny: { en: 'Happy Chinese New Year!', ms: 'Selamat Tahun Baru Cina!', zh: '新春快乐，万事如意！' },
+  merdeka: { en: 'Happy Merdeka & Malaysia Day!', ms: 'Selamat Hari Merdeka!', zh: '国庆日快乐！' },
+  raya: { en: 'Selamat Hari Raya!', ms: 'Selamat Hari Raya Aidilfitri!', zh: '开斋节快乐！' },
+  deepavali: { en: 'Happy Deepavali!', ms: 'Selamat Hari Deepavali!', zh: '屠妖节快乐！' },
+  gawai: { en: 'Happy Gawai!', ms: 'Selamat Hari Gawai!', zh: '丰收节快乐！' },
+  christmas: { en: 'Merry Christmas!', ms: 'Selamat Hari Krismas!', zh: '圣诞快乐，节日愉快！' },
+};
+const FEST_SUB = { cny: 'GONG XI FA CAI · 恭喜发财', merdeka: 'MERDEKA · MALAYSIA DAY', raya: 'MAAF ZAHIR & BATIN', deepavali: 'FESTIVAL OF LIGHTS', gawai: 'GAYU GURU GERAI NYAMAI', christmas: 'SEASON’S GREETINGS' };
+let banner = null, effects = true;
+function festHTML() {
+  if (banner) return `<div class="fest-img"><img src="${esc(banner)}" alt=""><canvas></canvas></div>`;
+  if (!FEST_TEXT[theme]) return '';
+  const ic = FEST_ICON[theme];
+  return `<div class="fest ${theme}"><span class="ic l">${ic}</span><span class="txt"><span class="g1">${esc(FEST_TEXT[theme][lang] || FEST_TEXT[theme].en)}</span><span class="g2">${esc(FEST_SUB[theme])}</span></span><span class="ic r">${ic}</span><canvas></canvas></div>`;
+}
+const MOTIF_COLOR = { cny: '#d62828', merdeka: '#0b2a7a', raya: '#13804a', deepavali: '#c2410c', gawai: '#a45a13', christmas: '#11603a' };
+function applyTheme() {
+  if (FEST_TEXT[theme]) {
+    document.body.dataset.theme = theme;
+    const svg = FEST_ICON[theme].replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"').replace(/currentColor/g, MOTIF_COLOR[theme]).replace(/#b3121b|#0b5a33/g, '#fff');
+    document.body.style.setProperty('--motif', `url("data:image/svg+xml,${encodeURIComponent(svg)}")`);
+    document.body.style.setProperty('--greet', JSON.stringify(FEST_TEXT[theme][lang] || FEST_TEXT[theme].en));
+  } else delete document.body.dataset.theme;
+  const el = $('festBar'); if (el) el.innerHTML = festHTML();
+  startFx();
+}
+
+// ---------------- festive particle effects (snow, confetti, petals…) ----------------
+// A small canvas animation inside the banner, plus a short full-screen shower when the page opens.
+const FX = {
+  christmas: { n: 34, make: (w, h) => ({ x: Math.random() * w, y: -10, r: 1.4 + Math.random() * 2.6, vy: .35 + Math.random() * .8, a: Math.random() * 6, c: '#fff', soft: true }), draw: dot },
+  // CNY: small gold coins (with the square hole) and little red packets, drifting down and gently turning
+  cny: { n: 20, make: (w) => { const coin = Math.random() < .6; return { x: Math.random() * w, y: -14, r: coin ? 4 + Math.random() * 2.5 : 5 + Math.random() * 2.5, vy: coin ? .6 + Math.random() * .7 : .45 + Math.random() * .5, a: Math.random() * 6, rot: (Math.random() - .5) * .8, vr: (Math.random() - .5) * .03, spin: .03 + Math.random() * .04, coin }; }, draw: (g, p) => p.coin ? coin(g, p) : hongbao(g, p) },
+  merdeka: { n: 34, make: (w) => ({ x: Math.random() * w, y: -10, r: 3 + Math.random() * 3, vy: .8 + Math.random() * 1.1, a: Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .2, c: ['#c8102e', '#0b2a7a', '#ffd400', '#ffffff'][Math.floor(Math.random() * 4)] }), draw: confetti },
+  raya: { n: 22, make: (w) => ({ x: Math.random() * w, y: -10, r: 2.5 + Math.random() * 3, vy: .3 + Math.random() * .6, a: Math.random() * 6, rot: Math.random() * 6, vr: .01, c: '#ffd86b' }), draw: star },
+  deepavali: { n: 30, up: true, make: (w, h) => ({ x: Math.random() * w, y: h + 10, r: 1.2 + Math.random() * 2.2, vy: -(.4 + Math.random() * .9), a: Math.random() * 6, c: ['#ffd166', '#ff9f1c', '#ffe8a3'][Math.floor(Math.random() * 3)], glow: true }), draw: dot },
+  gawai: { n: 24, make: (w) => ({ x: Math.random() * w, y: -10, r: 2.5 + Math.random() * 2, vy: .5 + Math.random() * .7, a: Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .08, c: ['#ffd36e', '#e9b44c', '#a3c45a'][Math.floor(Math.random() * 3)], petal: true }), draw: petal },
+};
+function dot(g, p) { if (p.glow) { g.shadowColor = p.c; g.shadowBlur = 8; } else if (p.soft) { g.shadowColor = 'rgba(30,70,110,.5)'; g.shadowBlur = 4; } g.fillStyle = p.c; g.globalAlpha = p.alpha ?? .9; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); g.shadowBlur = 0; }
+function petal(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.c; g.globalAlpha = .9; g.beginPath(); g.ellipse(0, 0, p.r, p.r * .55, 0, 0, 7); g.fill(); g.restore(); }
+function coin(g, p) { // gold coin seen edge-on as it flips: squash x by cos
+  p.f = (p.f || 0) + p.spin; const sx = Math.cos(p.f); const r = p.r;
+  g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.scale(Math.max(.12, Math.abs(sx)), 1); g.globalAlpha = .95;
+  const gr = g.createRadialGradient(-r * .35, -r * .35, r * .1, 0, 0, r); gr.addColorStop(0, sx > 0 ? '#fff3b0' : '#ffe27a'); gr.addColorStop(.6, '#f2be2e'); gr.addColorStop(1, '#b8860b');
+  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
+  g.strokeStyle = '#9a6a00'; g.lineWidth = Math.max(.6, r * .12); g.beginPath(); g.arc(0, 0, r * .78, 0, 7); g.stroke();
+  const q = r * .26; g.fillStyle = '#9a6a00'; g.fillRect(-q, -q, q * 2, q * 2); g.restore(); }
+function hongbao(g, p) { // little red packet with a gold seal, swaying
+  const w = p.r * 1.3, h = p.r * 1.9; g.save(); g.translate(p.x, p.y); g.rotate(p.rot + Math.sin(p.a * 1.3) * .35); g.globalAlpha = .95;
+  g.fillStyle = '#d7191f'; g.beginPath(); g.roundRect ? g.roundRect(-w / 2, -h / 2, w, h, w * .14) : g.rect(-w / 2, -h / 2, w, h); g.fill(); g.strokeStyle = '#f5c542'; g.lineWidth = .7; g.stroke();
+  g.fillStyle = '#b10f16'; g.beginPath(); g.moveTo(-w / 2, -h / 2); g.lineTo(w / 2, -h / 2); g.lineTo(w / 2, -h * .12); g.quadraticCurveTo(0, h * .08, -w / 2, -h * .12); g.closePath(); g.fill();
+  g.fillStyle = '#ffd24a'; g.beginPath(); g.arc(0, -h * .02, w * .2, 0, 7); g.fill(); g.restore(); }
+function confetti(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.scale(1, Math.cos(p.a * 2)); g.fillStyle = p.c; g.globalAlpha = .95; g.fillRect(-p.r, -p.r * .45, p.r * 2, p.r * .9); g.restore(); }
+function star(g, p) { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.c; g.globalAlpha = .55 + .45 * Math.abs(Math.sin(p.a * 2)); g.beginPath();
+  for (let i = 0; i < 10; i++) { const r = i % 2 ? p.r * .45 : p.r; g.lineTo(Math.cos(i * Math.PI / 5 - Math.PI / 2) * r, Math.sin(i * Math.PI / 5 - Math.PI / 2) * r); } g.fill(); g.restore(); }
+let fxRuns = [];
+function fxRun(cv, kind, { scale = 1, until = Infinity, banner = false } = {}) {
+  const k = FX[kind]; if (!k || !cv) return; const g = cv.getContext('2d'); const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let w = 0, h = 0; const size = () => { w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); }; size();
+  const n = Math.round(k.n * scale); const ps = Array.from({ length: n }, () => { const p = k.make(w, h); p.y = Math.random() * h; return p; });
+  const run = { stop: false }; if (banner) fxRuns.push(run); const t0 = performance.now();
+  const tick = (now) => {
+    if (run.stop || !cv.isConnected) return;
+    if (cv.clientWidth !== w || cv.clientHeight !== h) size();
+    g.clearRect(0, 0, w, h); const ending = now - t0 > until;
+    for (const p of ps) {
+      p.a += .02; p.y += p.vy; p.x += Math.sin(p.a) * .45; if (p.vr) p.rot += p.vr;
+      const out = k.up ? p.y < -12 : p.y > h + 12;
+      if (out) { if (ending) { p.dead = true; continue; } Object.assign(p, k.make(w, h)); }
+      if (!p.dead) k.draw(g, p);
+    }
+    g.globalAlpha = 1;
+    if (ending && ps.every((p) => p.dead)) { cv.remove(); return; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+let fxPageShown = false;
+function startFx() {
+  fxRuns.forEach((r) => r.stop = true); fxRuns = [];
+  if (!effects || !FX[theme] || matchMedia('(prefers-reduced-motion: reduce)').matches) { document.getElementById('fxPage')?.remove(); return; }
+  const cv = document.querySelector('#festBar canvas'); if (cv) fxRun(cv, theme, { scale: .5, banner: true });
+  if (!fxPageShown) { fxPageShown = true; fxShower(7000); } // a gentle shower over the whole page for the first few seconds only, so the menu stays easy to read
+}
+function fxShower(ms, onTop) {
+  if (!effects || !FX[theme] || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.getElementById('fxPage')?.remove();
+  const pc = document.createElement('canvas'); pc.id = 'fxPage'; if (onTop) pc.className = 'top'; document.body.appendChild(pc); fxRun(pc, theme, { scale: 1, until: ms });
+}
+
+// ---------------- kitchen busy notice ----------------
+function busyHTML() {
+  if (!busy.level) return '';
+  return `<div class="busy lv${busy.level}">${ICON.clock}<span>${esc(t(busy.level === 2 ? 'busy2' : 'busy1').replace('{m}', busy.extra))}</span></div>`;
+}
+async function checkSeat() {
+  if (!seat || seatClosed) return;
+  try { const r = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); skew = r.now - Date.now();
+    if (r.busy.level !== busy.level || r.busy.extra !== busy.extra) { busy = r.busy; if ($('busyBar')) $('busyBar').innerHTML = busyHTML(); }
+    if (r.orderCount !== orderCount || r.allCount !== allCount) { orderCount = r.orderCount; allCount = r.allCount; renderOrdersBtn(); }
+    if (themeSig(r) !== themeSig({ theme, banner, effects })) { theme = r.theme; banner = r.banner; effects = r.effects; applyTheme(); }
+    applyAvail(r.avail);
+    return true;
+  } catch (e) { if (e.status === 410) { showClosed(); return false; } }
+}
+setInterval(() => { if (document.visibilityState === 'visible') checkSeat(); }, 3000); // light request: busy notice + table-cleared check
 
 // ---------------- misc ----------------
 let toastTimer;
 function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
 async function reloadMenu() {
-  menu = (await api('/api/menu')).categories;
+  menu = (await api('/api/menu?clientId=' + encodeURIComponent(clientId) + (seat ? '&key=' + encodeURIComponent(seat.key) : ''))).categories;
   itemsById = new Map(menu.flatMap((c) => c.items).map((i) => [i.id, i]));
   cart = cart.filter((l) => itemsById.has(l.itemId) && !itemsById.get(l.itemId).soldOut);
   store.set(cartKey, cart);
@@ -516,14 +951,38 @@ function fatal() {
   $('app').innerHTML = `<div class="fatal"><div style="color:var(--muted-2)">${ICON.dish.replace('<svg', '<svg width="64" height="64"')}</div><h2>${esc(t('badTable'))}</h2><p>${esc(t('badTableSub'))}</p>
     <div style="margin-top:20px;display:flex;gap:8px;justify-content:center">${LANGS.map(([k, n]) => `<button class="icon-btn" onclick="lang='${k}';store.set('lang',lang);fatal()">${n}</button>`).join('')}</div></div>`;
 }
+// Shown when the table was cleared (or the seat expired): the guest must scan the physical QR code again.
+function showClosed() {
+  seatClosed = true; closeSheets();
+  if (seat) { try { localStorage.removeItem('cart:' + seat.key); localStorage.removeItem('seat'); } catch {} }
+  cart = []; $('cartbar').classList.remove('show'); $('success').classList.remove('show'); document.body.classList.remove('success-open');
+  document.title = config.name || 'Menu'; window.scrollTo(0, 0);
+  $('app').innerHTML = `<div class="fatal"><div class="tick" style="margin:0 auto">${ICON.check}</div><h2>${esc(t('closedT'))}</h2><p>${esc(t('closedS'))}</p>
+    <div style="margin-top:20px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${LANGS.map(([k, n]) => `<button class="icon-btn" onclick="lang='${k}';store.set('lang',lang);showClosed()">${n}</button>`).join('')}</div></div>`;
+}
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
-// Refresh sold-out status when the guest returns to the tab
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && table) reloadMenu().catch(() => {}); });
+// When the guest comes back to the tab: check the table is still open, refresh sold-out status.
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || !table || seatClosed) return;
+  if (await checkSeat()) reloadMenu().catch(() => {});
+});
 
 (async function init() {
   try {
-    [config, table] = await Promise.all([api('/api/config'), api('/api/table/' + encodeURIComponent(tableToken))]);
-  } catch (e) { if (e.status === 404) return fatal(); $('app').innerHTML = `<div class="fatal"><h2>${esc(t('netErr'))}</h2><button class="primary center" style="max-width:240px;margin:20px auto" onclick="location.reload()">↻</button></div>`; return; }
+    config = await api('/api/config');
+    const m = /^\/t\/([\w-]{6,40})$/.exec(location.pathname);
+    if (m) {
+      // Fresh QR scan: join the table's dining session, then drop the QR token from the address bar and
+      // browser history, so reopening this page later from history can't order once the table is cleared.
+      const r = await api('/api/checkin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: m[1] }) });
+      if (!seat || seat.key !== r.seat) { seat = { key: r.seat, table: r.table }; store.set('seat', seat); }
+      history.replaceState(null, '', '/o');
+    } else if (!seat) return showClosed();
+
+    table = { name: seat.table };
+    const st = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); busy = st.busy; skew = st.now - Date.now(); orderCount = st.orderCount; allCount = st.allCount; theme = st.theme; banner = st.banner; effects = st.effects;
+    cartKey = 'cart:' + seat.key; cart = store.get(cartKey, []);
+  } catch (e) { if (e.status === 404) return fatal(); if (e.status === 410) return showClosed(); $('app').innerHTML = `<div class="fatal"><h2>${esc(t('netErr'))}</h2><button class="primary center" style="max-width:240px;margin:20px auto" onclick="location.reload()">↻</button></div>`; return; }
   await reloadMenu(); renderPage();
 })();
 </script>

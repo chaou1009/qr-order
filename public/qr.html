@@ -27,6 +27,7 @@
     .grid { grid-template-columns: repeat(2, 1fr); gap: 10mm; padding: 0; }
     .card { border: 1px dashed #bbb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
+  .lg { display: block; max-height: 60px; max-width: 80%; margin: 0 auto 6px; object-fit: contain; }
 </style>
 </head>
 <body>
@@ -53,7 +54,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
   document.getElementById('grid').innerHTML = tables.filter((t) => t.active).map((t) => {
     const url = base + '/t/' + t.token;
     const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-    return `<div class="card"><div class="rn">${esc(c.name)}</div><div class="tn"><small>TABLE · MEJA · 桌</small>${esc(t.name)}</div>
+    return `<div class="card">${c.logo ? `<img class="lg" src="${esc(c.logo)}" alt="${esc(c.name)}">` : `<div class="rn">${esc(c.name)}</div>`}<div class="tn"><small>TABLE · MEJA · 桌</small>${esc(t.name)}</div>
       <div class="qr">${qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true })}</div>
       <div class="cta">Scan to order</div><div class="sub">Imbas untuk memesan · 扫码点餐<br>Pay at counter · Bayar di kaunter · 柜台付款</div>
       <div class="url">${esc(url)}</div></div>`;
