@@ -1,6 +1,6 @@
 {
   "name": "qr-table-ordering",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "QR table ordering for a single restaurant. No dependencies.",
   "engines": { "node": ">=22.13" },

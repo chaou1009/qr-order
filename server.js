@@ -598,7 +598,7 @@ async function handle(req, res) {
 }
 
 // ---------- back office (admin) API ----------
-const shopInfo = () => ({ name: getSetting('shopName', '') || RESTAURANT_NAME, logo: getSetting('logo', '') || null, hideSoldOut: getSetting('hideSoldOut', false) === true });
+const shopInfo = () => ({ name: getSetting('shopName', '') || RESTAURANT_NAME, logo: getSetting('logo', '') || null, hideSoldOut: getSetting('hideSoldOut', false) === true, showCookTime: getSetting('showCookTime', true) !== false });
 function themeInfo() {
   const theme = getSetting('theme', 'default');
   return { theme, banner: getSetting('banner:' + theme, '') || null, effects: getSetting('effects', true) !== false };
@@ -628,7 +628,7 @@ async function adminApi(req, res, p, url) {
   if (p === '/api/admin/menu' && req.method === 'GET') {
     const cats = db.prepare('SELECT * FROM categories ORDER BY sort, id').all();
     const items = db.prepare('SELECT * FROM items ORDER BY sort, id').all();
-    return send(res, 200, { hideSoldOut: getSetting('hideSoldOut', false) === true, categories: cats.map((c) => ({ id: c.id, name: parseJSON(c.name, {}), items: items.filter((i) => i.category_id === c.id).map(adminItem) })) });
+    return send(res, 200, { hideSoldOut: getSetting('hideSoldOut', false) === true, showCookTime: getSetting('showCookTime', true) !== false, categories: cats.map((c) => ({ id: c.id, name: parseJSON(c.name, {}), items: items.filter((i) => i.category_id === c.id).map(adminItem) })) });
   }
   // categories
   if (p === '/api/admin/categories' && req.method === 'POST') {
@@ -739,7 +739,7 @@ async function adminApi(req, res, p, url) {
     if ('price' in body) { const pr = toSen(body.price); if (pr == null) return send(res, 400, { error: 'PRICE' }); db.prepare('UPDATE items SET price = ? WHERE id = ?').run(pr, id); }
     return send(res, 200, { item: adminItem(db.prepare('SELECT * FROM items WHERE id = ?').get(id)) });
   }
-  if (p === '/api/admin/menu-settings' && req.method === 'POST') { if ('hideSoldOut' in body) setSetting('hideSoldOut', !!body.hideSoldOut); return send(res, 200, { hideSoldOut: getSetting('hideSoldOut', false) === true }); }
+  if (p === '/api/admin/menu-settings' && req.method === 'POST') { if ('hideSoldOut' in body) setSetting('hideSoldOut', !!body.hideSoldOut); if ('showCookTime' in body) setSetting('showCookTime', !!body.showCookTime); return send(res, 200, { hideSoldOut: getSetting('hideSoldOut', false) === true, showCookTime: getSetting('showCookTime', true) !== false }); }
   // shared option groups
   if (p === '/api/admin/option-templates' && req.method === 'GET') {
     const used = {}; for (const i of db.prepare('SELECT option_groups FROM items').all()) for (const id of parseJSON(i.option_groups, [])) used[id] = (used[id] || 0) + 1;

@@ -805,7 +805,7 @@ async function openRemind() {
   }));
   const ok = (x) => x.overdue && !x.cooling;
   const any = lines.some(ok);
-  const sub = (x) => x.cooling ? `<span class="again">${esc(t('againIn').replace('{m}', x.coolMin))}</span>` : x.overdue ? '' : esc(t('usually').replace('{m}', x.mins));
+  const sub = (x) => x.cooling ? `<span class="again">${esc(t('againIn').replace('{m}', x.coolMin))}</span>` : x.overdue || config.showCookTime === false ? '' : esc(t('usually').replace('{m}', x.mins));
   $('svcSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('remindTitle'))}</h3><button class="close" data-close>${ICON.close}</button></div>
     <p class="sheet-sub">${esc(any ? t('remindSub') : lines.some((x) => x.overdue) ? t('cooldown') : t('noneOverdue'))}</p>
     <div class="sheet-body">${lines.map((x) => { const s2 = sub(x); return `<label class="rm-line${ok(x) ? '' : ' wait'}"><input type="checkbox" ${ok(x) ? '' : 'disabled'} data-o="${x.o.id}" data-i="${x.i}"><span class="mark box"></span>
