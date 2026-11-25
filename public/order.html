@@ -77,6 +77,8 @@
   .soldout-tag { position: absolute; inset: auto 0 8px 0; margin: auto; width: max-content; background: rgba(20,20,20,.78); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
   .stock-note { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 3px 8px; align-self: flex-start; }
   .prep-note { margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); align-self: flex-start; }
+  .prep-extra { font-weight: 700; color: #a86500; }
+  .prep-extra.lv2 { color: #c0392b; }
   .prep-note svg { width: 13px; height: 13px; }
   .stock-note.out { color: var(--muted); background: var(--chip); }
   .item.soldout .stock-note { color: var(--muted); background: var(--chip); }
@@ -323,7 +325,7 @@ const T = {
     specials: 'Today\'s Specials', specialsSub: 'Chef\'s picks for today', viewOrdersBtn: 'View orders', onlyLeft: 'Only {n} left', inCarts: '{n} in other guests\' carts', heldOut: 'Last portions in other guests\' carts', maxLeft: 'Sorry, only {n} left for this dish.', stockErr: 'Sorry, only {n} portion(s) of {x} are available now. We have updated your cart.', reminded: 'Reminder sent', acked: 'Staff is on it', againIn: 'You can remind again in {m} min', cooldown: 'We received your reminder a moment ago. Thank you for your patience!', callStaff: 'Call a staff member', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
     callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Remind staff: a dish has not arrived yet', callDone: 'Staff notified, coming shortly', remindTitle: 'Which dishes have not arrived yet?',
     remindSub: 'Please tick the dishes you are still waiting for, and we will let the kitchen know right away.', remindBtn: 'Let the kitchen know',
-    remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', prepTime: 'About {m} min', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
+    remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', prepTime: 'About {m} min', prepExtra: '(+{m} min)', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
     busy1: 'We are a little busy right now, so food may take about {m} minutes longer. Thank you for your patience!', busy2: 'We are very busy right now, so food may take about {m} minutes longer. Thank you for your patience and understanding!',
     pickDish: 'Please tick at least one dish.' },
   ms: { table: 'Meja', orders: 'Pesanan', viewCart: 'Lihat troli', cart: 'Pesanan anda', add: 'Tambah ke pesanan', soldOut: 'Habis dijual',
@@ -342,7 +344,7 @@ const T = {
     specials: 'Istimewa Hari Ini', specialsSub: 'Pilihan istimewa untuk hari ini', viewOrdersBtn: 'Lihat pesanan', onlyLeft: 'Tinggal {n} sahaja', inCarts: '{n} dalam troli pelanggan lain', heldOut: 'Bahagian terakhir dalam troli pelanggan lain', maxLeft: 'Maaf, hanya tinggal {n} untuk hidangan ini.', stockErr: 'Maaf, hanya {n} bahagian {x} yang tersedia sekarang. Troli anda telah dikemas kini.', reminded: 'Peringatan dihantar', acked: 'Kakitangan sedang uruskan', againIn: 'Boleh ingatkan semula dalam {m} minit', cooldown: 'Kami baru sahaja menerima peringatan anda. Terima kasih atas kesabaran anda!', callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
     callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Ingatkan pelayan: hidangan belum sampai', callDone: 'Pelayan dimaklumkan, akan datang', remindTitle: 'Hidangan mana yang belum sampai?',
     remindSub: 'Sila tandakan hidangan yang masih ditunggu, dan kami akan memaklumkan dapur dengan segera.', remindBtn: 'Maklumkan dapur',
-    remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', prepTime: 'Kira-kira {m} minit', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
+    remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', prepTime: 'Kira-kira {m} minit', prepExtra: '(+{m} minit)', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
     busy1: 'Kami agak sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran anda!', busy2: 'Kami sangat sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran dan pengertian anda!',
     pickDish: 'Sila tandakan sekurang-kurangnya satu hidangan.' },
   zh: { table: '桌号', orders: '订单', viewCart: '查看购物车', cart: '您的订单', add: '加入订单', soldOut: '已售完',
@@ -361,7 +363,7 @@ const T = {
     specials: '今日特别', specialsSub: '今天特别推荐，欢迎品尝', viewOrdersBtn: '查看订单', onlyLeft: '仅剩 {n} 份', inCarts: '{n} 份在其他客人的购物车中', heldOut: '最后几份已在其他客人的购物车中', maxLeft: '抱歉，这道菜只剩 {n} 份了。', stockErr: '抱歉，{x} 目前只剩 {n} 份，已为您更新购物车。', reminded: '已提醒', acked: '员工已确认', againIn: '{m} 分钟后可再次提醒', cooldown: '我们刚收到您的提醒，感谢您的耐心等候！', callStaff: '请服务员过来', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
     callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '提醒服务员：还有菜未上桌', callDone: '已通知服务员，马上过来', remindTitle: '请问哪些菜还没上桌？',
     remindSub: '请勾选还在等待的菜品，我们会马上通知厨房。', remindBtn: '通知厨房',
-    remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', prepTime: '约 {m} 分钟', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
+    remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', prepTime: '约 {m} 分钟', prepExtra: '（+{m} 分钟）', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
     busy1: '目前用餐人数较多，出餐可能需要多等约 {m} 分钟，感谢您的耐心等候！', busy2: '目前非常繁忙，出餐可能需要多等约 {m} 分钟，感谢您的耐心与谅解！',
     pickDish: '请至少勾选一道菜。' },
 };
@@ -475,12 +477,15 @@ function stockNote(it) {
   if (it.held) parts.push(it.stock - it.held <= 0 ? t('heldOut') : t('inCarts').replace('{n}', it.held));
   return parts.length ? `<div class="stock-note${left <= 0 ? ' out' : ''}">${esc(parts.join(' · '))}</div>` : '';
 }
+// "About 15 min" under each dish (admin switch), plus "+10 min" while the kitchen is busy
+const prepInner = (m) => ICON.clock + esc(t('prepTime').replace('{m}', m)) + (busy.extra ? ` <span class="prep-extra lv${busy.level}">${esc(t('prepExtra').replace('{m}', busy.extra))}</span>` : '');
+function refreshPrep() { document.querySelectorAll('.prep-note[data-m]').forEach((el) => { el.innerHTML = prepInner(el.dataset.m); }); }
 function itemRow(it) {
   const inCart = inCartQty(it.id);
   const blocked = !it.soldOut && it.stock != null && canAdd(it) <= 0 && !inCart;
   return `<div class="item${it.soldOut || blocked ? ' soldout' : ''}" data-id="${it.id}">
     <div class="item-info"><div class="item-name">${esc(L(it.name))}</div>${L(it.description) ? `<div class="item-desc">${esc(L(it.description))}</div>` : ''}
-      ${stockNote(it)}${config.showPrepTime && !it.soldOut && it.cookMinutes ? `<div class="prep-note">${ICON.clock}${esc(t('prepTime').replace('{m}', it.cookMinutes))}</div>` : ''}<div class="item-price">${rm(it.price)}</div></div>
+      ${stockNote(it)}${config.showPrepTime && !it.soldOut && it.cookMinutes ? `<div class="prep-note" data-m="${it.cookMinutes}">${prepInner(it.cookMinutes)}</div>` : ''}<div class="item-price">${rm(it.price)}</div></div>
     <div class="item-media">${thumb(it)}
       ${it.soldOut ? `<span class="soldout-tag">${esc(t('soldOut'))}</span>` : blocked ? '' : `<span class="add-btn" aria-hidden="true">${ICON.plus}</span>`}
       ${inCart ? `<span class="qty-badge">${inCart}</span>` : ''}</div></div>`;
@@ -930,7 +935,7 @@ function busyHTML() {
 async function checkSeat() {
   if (!seat || seatClosed) return;
   try { const r = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); skew = r.now - Date.now();
-    if (r.busy.level !== busy.level || r.busy.extra !== busy.extra) { busy = r.busy; if ($('busyBar')) $('busyBar').innerHTML = busyHTML(); }
+    if (r.busy.level !== busy.level || r.busy.extra !== busy.extra) { busy = r.busy; if ($('busyBar')) $('busyBar').innerHTML = busyHTML(); refreshPrep(); }
     if (r.orderCount !== orderCount || r.allCount !== allCount) { orderCount = r.orderCount; allCount = r.allCount; renderOrdersBtn(); }
     if (themeSig(r) !== themeSig({ theme, banner, effects })) { theme = r.theme; banner = r.banner; effects = r.effects; applyTheme(); }
     applyAvail(r.avail);
