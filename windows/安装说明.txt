@@ -56,9 +56,13 @@
 
 四、装好后
 ----------
-1. 平板用 Chrome 打开 https://ordertastychickenrice.com/staff ，输入员工密码。
-   后台是 https://ordertastychickenrice.com/admin
-   建议在 Chrome 右上角选 “添加到主屏幕”，以后一点就开。
+1. 在平板做两个桌面图标（每台平板只做一次）：
+   a. 用 Chrome 打开 https://ordertastychickenrice.com/staff ，输入员工密码。
+   b. 点 Chrome 右上角 ⋮ → “添加到主屏幕”（或“安装应用”）→ 添加。
+      桌面会多一个橙色“接单”图标。
+   c. 同样打开 https://ordertastychickenrice.com/admin ，再加一次，得到黑色“后台”图标。
+   以后点图标就直接进去，全屏像 App 一样，不用再输入密码
+   （登录会记住 180 天；清除浏览器资料或改了员工密码后，才需要再输入一次）。
 2. 在后台 → 桌台，重新打印桌上的二维码。
    ★ 一定要在填好网址之后才打印，旧的 Demo 二维码不能用。
 3. 用自己的手机（关掉 Wi-Fi、用流量）扫一张桌码，下一张测试单，看平板有没有响。
