@@ -70,12 +70,24 @@
   .thumb svg { width: 40px; height: 40px; }
   .add-btn { position: absolute; right: -6px; bottom: -6px; width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--bg); background: var(--accent); color: #fff; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
   .add-btn svg { width: 18px; height: 18px; }
+  .item-price .was, .detail-main .price .was { margin-left: 6px; font-weight: 500; font-size: .85em; color: var(--muted-2); text-decoration: line-through; }
+  .item-price .now.disc, .detail-main .price .now.disc { color: #d92d20; }
+  /* Discount badge: a ribbon that gently bounces, with a light sweeping across it */
+  .disc-badge { position: absolute; right: -6px; top: -6px; z-index: 2; overflow: hidden; padding: 3px 8px; border-radius: 999px 999px 999px 4px; background: linear-gradient(135deg, #ff4d3d, #d4145a); color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .02em; box-shadow: 0 3px 10px rgba(212, 20, 90, .35); border: 2px solid var(--bg); animation: discBob 2.4s ease-in-out infinite; }
+  .disc-badge::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .75), transparent); transform: skewX(-20deg); animation: discShine 2.4s ease-in-out infinite; }
+  .disc-badge.big { position: static; display: inline-block; margin-left: 8px; vertical-align: 2px; border-color: transparent; }
+  .disc-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #fde2e1; color: #c0392b; font-size: 11px; font-weight: 800; }
+  @keyframes discBob { 0%, 100% { transform: rotate(-4deg) scale(1); } 50% { transform: rotate(3deg) scale(1.08); } }
+  @keyframes discShine { 0%, 45% { left: -60%; } 75%, 100% { left: 130%; } }
+  @media (prefers-reduced-motion: reduce) { .disc-badge, .disc-badge::after { animation: none; } }
   .qty-badge { position: absolute; left: -6px; top: -6px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 12px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--bg); }
   .item.soldout { cursor: default; }
   .item.soldout .item-name, .item.soldout .item-price, .item.soldout .item-desc { color: var(--muted-2); }
   .item.soldout .thumb { filter: grayscale(1); opacity: .55; }
   .soldout-tag { position: absolute; inset: auto 0 8px 0; margin: auto; width: max-content; background: rgba(20,20,20,.78); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
   .stock-note { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 3px 8px; align-self: flex-start; }
+  .prep-note { margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); align-self: flex-start; }
+  .prep-note svg { width: 13px; height: 13px; }
   .stock-note.out { color: var(--muted); background: var(--chip); }
   .item.soldout .stock-note { color: var(--muted); background: var(--chip); }
   .footer-space { background: var(--bg); text-align: center; color: var(--muted-2); font-size: 12px; padding: 24px 16px; }
@@ -321,7 +333,7 @@ const T = {
     specials: 'Today\'s Specials', specialsSub: 'Chef\'s picks for today', viewOrdersBtn: 'View orders', onlyLeft: 'Only {n} left', inCarts: '{n} in other guests\' carts', heldOut: 'Last portions in other guests\' carts', maxLeft: 'Sorry, only {n} left for this dish.', stockErr: 'Sorry, only {n} portion(s) of {x} are available now. We have updated your cart.', reminded: 'Reminder sent', acked: 'Staff is on it', againIn: 'You can remind again in {m} min', cooldown: 'We received your reminder a moment ago. Thank you for your patience!', callStaff: 'Call a staff member', callTitle: 'How may we help you?', rWater: 'Water, please', rCutlery: 'Cutlery or tissues', rSauce: 'Extra sauce or chilli', rOther: 'Please come to our table',
     callSent: 'Thank you! A member of our team will be with you shortly.', notArrived: 'Remind staff: a dish has not arrived yet', callDone: 'Staff notified, coming shortly', remindTitle: 'Which dishes have not arrived yet?',
     remindSub: 'Please tick the dishes you are still waiting for, and we will let the kitchen know right away.', remindBtn: 'Let the kitchen know',
-    remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
+    remindSent: 'Sorry for the wait. We have let the kitchen know.', usually: 'Usually ready in about {m} min', prepTime: 'About {m} min', fromPrice: 'From {p}', noneOverdue: 'Your dishes are still within the usual preparation time. Thank you for your patience!',
     busy1: 'We are a little busy right now, so food may take about {m} minutes longer. Thank you for your patience!', busy2: 'We are very busy right now, so food may take about {m} minutes longer. Thank you for your patience and understanding!',
     pickDish: 'Please tick at least one dish.' },
   ms: { table: 'Meja', orders: 'Pesanan', viewCart: 'Lihat troli', cart: 'Pesanan anda', add: 'Tambah ke pesanan', soldOut: 'Habis dijual',
@@ -340,7 +352,7 @@ const T = {
     specials: 'Istimewa Hari Ini', specialsSub: 'Pilihan istimewa untuk hari ini', viewOrdersBtn: 'Lihat pesanan', onlyLeft: 'Tinggal {n} sahaja', inCarts: '{n} dalam troli pelanggan lain', heldOut: 'Bahagian terakhir dalam troli pelanggan lain', maxLeft: 'Maaf, hanya tinggal {n} untuk hidangan ini.', stockErr: 'Maaf, hanya {n} bahagian {x} yang tersedia sekarang. Troli anda telah dikemas kini.', reminded: 'Peringatan dihantar', acked: 'Kakitangan sedang uruskan', againIn: 'Boleh ingatkan semula dalam {m} minit', cooldown: 'Kami baru sahaja menerima peringatan anda. Terima kasih atas kesabaran anda!', callStaff: 'Panggil pelayan', callTitle: 'Apa yang boleh kami bantu?', rWater: 'Air kosong, terima kasih', rCutlery: 'Sudu, garpu atau tisu', rSauce: 'Sos atau cili tambahan', rOther: 'Sila datang ke meja kami',
     callSent: 'Terima kasih! Kakitangan kami akan datang sebentar lagi.', notArrived: 'Ingatkan pelayan: hidangan belum sampai', callDone: 'Pelayan dimaklumkan, akan datang', remindTitle: 'Hidangan mana yang belum sampai?',
     remindSub: 'Sila tandakan hidangan yang masih ditunggu, dan kami akan memaklumkan dapur dengan segera.', remindBtn: 'Maklumkan dapur',
-    remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
+    remindSent: 'Maaf kerana membuat anda menunggu. Kami telah memaklumkan dapur.', usually: 'Biasanya siap dalam kira-kira {m} minit', prepTime: 'Kira-kira {m} minit', fromPrice: 'Dari {p}', noneOverdue: 'Hidangan anda masih dalam tempoh penyediaan biasa. Terima kasih atas kesabaran anda!',
     busy1: 'Kami agak sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran anda!', busy2: 'Kami sangat sibuk sekarang, jadi makanan mungkin mengambil masa kira-kira {m} minit lebih lama. Terima kasih atas kesabaran dan pengertian anda!',
     pickDish: 'Sila tandakan sekurang-kurangnya satu hidangan.' },
   zh: { table: '桌号', orders: '订单', viewCart: '查看购物车', cart: '您的订单', add: '加入订单', soldOut: '已售完',
@@ -359,7 +371,7 @@ const T = {
     specials: '今日特别', specialsSub: '今天特别推荐，欢迎品尝', viewOrdersBtn: '查看订单', onlyLeft: '仅剩 {n} 份', inCarts: '{n} 份在其他客人的购物车中', heldOut: '最后几份已在其他客人的购物车中', maxLeft: '抱歉，这道菜只剩 {n} 份了。', stockErr: '抱歉，{x} 目前只剩 {n} 份，已为您更新购物车。', reminded: '已提醒', acked: '员工已确认', againIn: '{m} 分钟后可再次提醒', cooldown: '我们刚收到您的提醒，感谢您的耐心等候！', callStaff: '请服务员过来', callTitle: '请问需要什么帮助？', rWater: '麻烦加水', rCutlery: '需要餐具或纸巾', rSauce: '需要酱料或辣椒', rOther: '请服务员过来一下',
     callSent: '好的，服务员马上为您过来，谢谢！', notArrived: '提醒服务员：还有菜未上桌', callDone: '已通知服务员，马上过来', remindTitle: '请问哪些菜还没上桌？',
     remindSub: '请勾选还在等待的菜品，我们会马上通知厨房。', remindBtn: '通知厨房',
-    remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
+    remindSent: '抱歉让您久等了，我们已通知厨房。', usually: '一般约 {m} 分钟上桌', prepTime: '约 {m} 分钟', fromPrice: '{p} 起', noneOverdue: '您的菜品还在正常制作时间内，感谢您的耐心等候！',
     busy1: '目前用餐人数较多，出餐可能需要多等约 {m} 分钟，感谢您的耐心等候！', busy2: '目前非常繁忙，出餐可能需要多等约 {m} 分钟，感谢您的耐心与谅解！',
     pickDish: '请至少勾选一道菜。' },
 };
@@ -478,8 +490,8 @@ function itemRow(it) {
   const blocked = !it.soldOut && it.stock != null && canAdd(it) <= 0 && !inCart;
   return `<div class="item${it.soldOut || blocked ? ' soldout' : ''}" data-id="${it.id}">
     <div class="item-info"><div class="item-name">${esc(L(it.name))}</div>${L(it.description) ? `<div class="item-desc">${esc(L(it.description))}</div>` : ''}
-      ${stockNote(it)}<div class="item-price">${rm(it.price)}</div></div>
-    <div class="item-media">${thumb(it)}
+      ${stockNote(it)}${config.showPrepTime && !it.soldOut && it.cookMinutes ? `<div class="prep-note">${ICON.clock}${esc(t('prepTime').replace('{m}', it.cookMinutes))}</div>` : ''}<div class="item-price">${priceHTML(it)}</div></div>
+    <div class="item-media">${thumb(it)}${discBadge(it)}
       ${it.soldOut ? `<span class="soldout-tag">${esc(t('soldOut'))}</span>` : blocked ? '' : `<span class="add-btn" aria-hidden="true">${ICON.plus}</span>`}
       ${inCart ? `<span class="qty-badge">${inCart}</span>` : ''}</div></div>`;
 }
@@ -528,9 +540,24 @@ function openItem(id, editKey) {
   detail = { item: it, qty: existing ? existing.qty : 1, options, note: existing ? existing.note : '', takeaway: existing ? !!existing.takeaway : false, editKey };
   renderItem(); showSheet($('itemSheet'));
 }
-function unitPrice(it, options) {
-  let p = it.price; it.options.forEach((g) => (options[g.id] || []).forEach((cid) => { const c = g.choices.find((x) => x.id === cid); if (c && c.price) p += Math.round(c.price * 100); })); return p;
+function unitPrice(it, options, full = false) {
+  let p = it.price; it.options.forEach((g) => (options[g.id] || []).forEach((cid) => { const c = g.choices.find((x) => x.id === cid); if (c && c.price) p += Math.round(c.price * 100); }));
+  return it.discount && !full ? discounted(p, it.discount) : p;
 }
+const discounted = (p, d) => Math.round(p * (100 - d) / 1000) * 10; // to the nearest 10 sen, same as the server
+// Menu price: base price plus the cheapest choice of each required single-choice group ("From RM 14.90" when choices differ).
+// A dish whose price is 0 and has no priced choices shows no price at all.
+function priceHTML(it) {
+  let p = it.price, from = false;
+  it.options.filter((g) => g.required && g.type === 'single' && g.choices.length).forEach((g) => {
+    const ps = g.choices.map((c) => Math.round((c.price || 0) * 100)); p += Math.min(...ps); if (Math.min(...ps) !== Math.max(...ps)) from = true;
+  });
+  if (!p) return '';
+  const now = it.discount ? discounted(p, it.discount) : p;
+  const html = `<span class="now${it.discount ? ' disc' : ''}">${rm(now)}</span>${it.discount ? `<span class="was">${rm(p)}</span>` : ''}`;
+  return from ? t('fromPrice').replace('{p}', html) : html;
+}
+const discBadge = (it, cls = '') => it.discount && !it.soldOut ? `<span class="disc-badge ${cls}">-${it.discount}%</span>` : '';
 function missingGroups() { return detail.item.options.filter((g) => g.required && !(detail.options[g.id] || []).length); }
 function renderItem() {
   const { item: it } = detail;
@@ -547,7 +574,7 @@ function renderItem() {
     <div class="sheet-body" style="position:relative">
       <button class="close detail-close" data-close>${ICON.close}</button>
       ${it.image ? `<img class="detail-img" src="${esc(it.image)}" alt="">` : `<div class="detail-ph">${ICON.dish}</div>`}
-      <div class="detail-main"><h3>${esc(L(it.name))}</h3>${L(it.description) ? `<p>${esc(L(it.description))}</p>` : ''}<div class="price">${rm(it.price)}</div></div>
+      <div class="detail-main"><h3>${esc(L(it.name))}</h3>${L(it.description) ? `<p>${esc(L(it.description))}</p>` : ''}<div class="price">${priceHTML(it)}${discBadge(it, 'big')}</div></div>
       ${groups}
       <div class="serve"><b>${esc(t('howServe'))}</b><div class="seg2" id="serveSeg">
         <button type="button" data-ta="0" class="${detail.takeaway ? '' : 'on'}">${ICON.bowl.replace('<svg', '<svg width="18" height="18"')} ${esc(t('dineIn'))}</button>
@@ -721,7 +748,7 @@ const fmtTime = (ms) => new Date(ms).toLocaleTimeString(lang === 'zh' ? 'zh-CN' 
 const statusChip = (o) => o.status === 'void' ? `<span class="void-tag">${esc(t('cancelled'))}</span>` : `<span class="st ${o.status === 'done' ? 'done' : 'new'}">${esc(t(o.status === 'done' ? 'stDone' : 'stNew'))}</span>`;
 const remTag = (oid, i) => { const r = reminders[oid + ':' + i]; return r ? `<span class="rtag${r.handled ? ' ack' : ''}">${esc(t(r.handled ? 'acked' : 'reminded'))}</span>` : ''; };
 const taTag = (l) => l.takeaway ? `<span class="ta-tag">${esc(t('takeaway'))}</span>` : '';
-const lineRow = (l, sum, tag = '') => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${taTag(l)}${tag}${l.options.length ? `<div class="o">${esc(l.options.map((x) => L(x.choice)).join(' · '))}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(sum)}</b></div>`;
+const lineRow = (l, sum, tag = '') => `<div class="receipt-row"><div>${l.qty} × ${esc(L(l.name))}${taTag(l)}${l.discount ? `<span class="disc-tag">-${l.discount}%</span>` : ''}${tag}${l.options.length ? `<div class="o">${esc(l.options.map((x) => L(x.choice)).join(' · '))}</div>` : ''}${l.note ? `<div class="o">${esc(t('addNote'))}: ${esc(l.note)}</div>` : ''}</div><b>${rm(sum)}</b></div>`;
 const emptyHTML = (msg) => `<div class="empty">${ICON.receipt.replace('<svg', '<svg width="40" height="40"')}<p>${esc(msg)}</p></div>`;
 async function fetchSeatOrders() {
   try { const r = await api('/api/seat-orders?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); histOrders = r.orders; reminders = r.reminders || {}; remindCool = r.cooldownMs || remindCool; skew = r.now - Date.now(); return true; }
