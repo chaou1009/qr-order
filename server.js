@@ -122,6 +122,8 @@ const getSetting = (k, d) => { const r = db.prepare('SELECT value FROM settings 
 const setSetting = (k, v) => db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(k, JSON.stringify(v));
 // Kitchen busy level set on the tablet: 0 normal, 1 busy, 2 very busy -> extra minutes added to every dish's usual time.
 const BUSY_EXTRA = { 0: 0, 1: 10, 2: 20 };
+// Bumped on every back-office change; with the date it tells guest pages when to reload the menu (also at midnight for specials / weekdays).
+let menuVer = Date.now();
 const busyInfo = () => { const level = Number(getSetting('busy_level', 0)) || 0; return { level, extra: BUSY_EXTRA[level] || 0 }; };
 
 const newToken = () => crypto.randomBytes(9).toString('base64url'); // 12 chars, unguessable
@@ -410,7 +412,7 @@ async function handle(req, res) {
     const clientId = url.searchParams.get('clientId') || '';
     const c = db.prepare("SELECT COALESCE(SUM(status != 'void'), 0) AS n, COALESCE(SUM(client_id = ? AND status != 'void'), 0) AS mine, COUNT(*) AS all_n FROM orders WHERE session_id = ?").get(clientId, seat.sess.id);
     return send(res, 200, { table: seat.table.name, openedAt: seat.sess.opened_at, busy: busyInfo(), now: Date.now(), ...themeInfo(),
-      orderCount: c.n, mineCount: c.mine, allCount: c.all_n, avail: availability(holderOf(clientId, seat)) });
+      orderCount: c.n, mineCount: c.mine, allCount: c.all_n, avail: availability(holderOf(clientId, seat)), menuVer: menuVer + ':' + today() });
   }
   // The guest's cart for limited dishes: reserve those portions for a few minutes so other guests see them as taken.
   if (p === '/api/holds' && req.method === 'POST') {
@@ -529,6 +531,7 @@ async function handle(req, res) {
   }
   if (p.startsWith('/api/admin/')) {
     if (!isAdmin(req)) return send(res, 401, { error: 'LOGIN' });
+    if (req.method !== 'GET') menuVer++; // guest pages notice this within a few seconds and redraw the menu
     return adminApi(req, res, p, url);
   }
   if (p.startsWith('/api/staff/')) {

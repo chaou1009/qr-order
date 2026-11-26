@@ -134,7 +134,6 @@
   <h1 id="title">接单</h1>
   <div class="seg"><button id="tabLive" class="on">&nbsp;<span class="count" id="liveCount">0</span></button><button id="tabTables">桌台</button><button id="tabHist">历史订单</button></div>
   <button class="pill busy-pill" id="busyBtn"></button>
-  <a class="pill" id="qrLink" href="/staff/qr" target="_blank" style="text-decoration:none"></a>
   <a class="pill" id="adminLink" href="/admin" style="text-decoration:none"></a>
   <button class="pill" id="soundBtn"></button>
   <button class="pill" id="langBtn"></button>
@@ -216,7 +215,7 @@ function applyLabels() {
   $('title').textContent = (restaurantName ? restaurantName + ' · ' : '') + tr('title');
   $('tabLive').firstChild.textContent = tr('pending') + ' ';
   $('tabTables').textContent = tr('tables'); $('tabHist').textContent = tr('history');
-  $('qrLink').textContent = tr('qr'); $('adminLink').textContent = tr('admin'); $('langBtn').textContent = LANG_LABEL[lang];
+  $('adminLink').textContent = tr('admin'); $('langBtn').textContent = LANG_LABEL[lang];
   $('connPill').title = tr('conn'); $('toastBtn').textContent = tr('undo');
   renderSoundBtn(); renderBusyBtn(); renderRequests();
 }

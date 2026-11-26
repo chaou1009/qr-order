@@ -417,7 +417,7 @@ let clientId = store.get('clientId', null);
 if (!clientId) { clientId = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)); store.set('clientId', clientId); }
 let cartKey = 'cart:' + (seat ? seat.key : '');
 let cart = seat ? store.get(cartKey, []) : []; // [{key, itemId, qty, options:{gid:[cid]}, note}]
-let menu = [], itemsById = new Map(), table = null, config = { name: '' }, seatClosed = false, busy = { level: 0, extra: 0 }, skew = 0, orderCount = 0, allCount = 0, theme = 'default';
+let menuVer = null, menu = [], itemsById = new Map(), table = null, config = { name: '' }, seatClosed = false, busy = { level: 0, extra: 0 }, skew = 0, orderCount = 0, allCount = 0, theme = 'default';
 const themeSig = (r) => [r.theme, r.banner, r.effects].join('|');
 let detail = null; // {item, qty, options, note, editKey}
 
@@ -826,7 +826,7 @@ async function openRemind() {
   if (await fetchSeatOrders() === false) return;
   const now = Date.now() + skew;
   const lines = histOrders.filter((o) => o.status !== 'void').flatMap((o) => o.lines.map((l, i) => {
-    const due = o.createdAt + ((l.cookMinutes || 15) + busy.extra) * 60000;
+    const due = o.createdAt + (l.cookMinutes || 15) * 60000; // the dish's usual time; the busy notice is shown but does not hold reminders back
     const rem = reminders[o.id + ':' + i]; const coolLeft = rem ? rem.at + remindCool - now : 0;
     return { o, l, i, rem, cooling: coolLeft > 0, coolMin: Math.max(1, Math.ceil(coolLeft / 60000)), overdue: now >= due, mins: Math.max(1, Math.ceil((due - now) / 60000)) };
   }));
@@ -835,6 +835,7 @@ async function openRemind() {
   const sub = (x) => x.cooling ? `<span class="again">${esc(t('againIn').replace('{m}', x.coolMin))}</span>` : x.overdue ? '' : esc(t('usually').replace('{m}', x.mins));
   $('svcSheet').innerHTML = `<div class="grip"></div><div class="sheet-head"><h3>${esc(t('remindTitle'))}</h3><button class="close" data-close>${ICON.close}</button></div>
     <p class="sheet-sub">${esc(any ? t('remindSub') : lines.some((x) => x.overdue) ? t('cooldown') : t('noneOverdue'))}</p>
+    ${busy.level ? `<div style="padding:0 16px 8px">${busyHTML()}</div>` : ''}
     <div class="sheet-body">${lines.map((x) => { const s2 = sub(x); return `<label class="rm-line${ok(x) ? '' : ' wait'}"><input type="checkbox" ${ok(x) ? '' : 'disabled'} data-o="${x.o.id}" data-i="${x.i}"><span class="mark box"></span>
       <div class="info"><div><b>${x.l.qty} × ${esc(L(x.l.name))}</b>${taTag(x.l)}${remTag(x.o.id, x.i)}</div><div class="sub">${esc(t('orderNo'))} #${x.o.seq} · ${fmtTime(x.o.createdAt)}${s2 ? ' · ' + s2 : ''}</div></div></label>`; }).join('')}</div>
     <div class="sheet-foot"><button class="primary center" id="remindSend" ${any ? '' : 'disabled'}>${esc(t('remindBtn'))}</button></div>`;
@@ -958,6 +959,8 @@ async function checkSeat() {
     if (r.busy.level !== busy.level || r.busy.extra !== busy.extra) { busy = r.busy; if ($('busyBar')) $('busyBar').innerHTML = busyHTML(); }
     if (r.orderCount !== orderCount || r.allCount !== allCount) { orderCount = r.orderCount; allCount = r.allCount; renderOrdersBtn(); }
     if (themeSig(r) !== themeSig({ theme, banner, effects })) { theme = r.theme; banner = r.banner; effects = r.effects; applyTheme(); }
+    if (r.menuVer && menuVer && r.menuVer !== menuVer) refreshFromShop(); // back office changed something
+    menuVer = r.menuVer || menuVer;
     applyAvail(r.avail);
     return true;
   } catch (e) { if (e.status === 410) { showClosed(); return false; } }
@@ -967,6 +970,10 @@ setInterval(() => { if (document.visibilityState === 'visible') checkSeat(); }, 
 // ---------------- misc ----------------
 let toastTimer;
 function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
+// The back office changed something (menu, prices, settings): fetch it again and redraw, keeping the guest's scroll position.
+async function refreshFromShop() {
+  try { config = await api('/api/config'); const y = window.scrollY; await reloadMenu(); renderCartBar(); window.scrollTo(0, y); } catch {}
+}
 async function reloadMenu() {
   menu = (await api('/api/menu?clientId=' + encodeURIComponent(clientId) + (seat ? '&key=' + encodeURIComponent(seat.key) : ''))).categories;
   itemsById = new Map(menu.flatMap((c) => c.items).map((i) => [i.id, i]));
@@ -1007,7 +1014,7 @@ document.addEventListener('visibilitychange', async () => {
     } else if (!seat) return showClosed();
 
     table = { name: seat.table };
-    const st = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); busy = st.busy; skew = st.now - Date.now(); orderCount = st.orderCount; allCount = st.allCount; theme = st.theme; banner = st.banner; effects = st.effects;
+    const st = await api('/api/seat?key=' + encodeURIComponent(seat.key) + '&clientId=' + encodeURIComponent(clientId)); busy = st.busy; menuVer = st.menuVer || null; skew = st.now - Date.now(); orderCount = st.orderCount; allCount = st.allCount; theme = st.theme; banner = st.banner; effects = st.effects;
     cartKey = 'cart:' + seat.key; cart = store.get(cartKey, []);
   } catch (e) { if (e.status === 404) return fatal(); if (e.status === 410) return showClosed(); $('app').innerHTML = `<div class="fatal"><h2>${esc(t('netErr'))}</h2><button class="primary center" style="max-width:240px;margin:20px auto" onclick="location.reload()">↻</button></div>`; return; }
   await reloadMenu(); renderPage();
